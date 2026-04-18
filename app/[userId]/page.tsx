@@ -20,6 +20,7 @@ import type {
   MrkollPanelState,
   KrafmanPanelState,
   TwitterPanelState,
+  GithubPanelState,
   BreachPanelState,
 } from "@/components/detail-panel"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,8 @@ import type {
 } from "@/lib/mrkoll.types"
 import type { TwitterSearchResult } from "@/lib/twitter-api"
 import { normalizeTwitterUsername } from "@/lib/twitter-api"
+import type { GithubSearchResult } from "@/lib/github-api"
+import { normalizeGithubLogin } from "@/lib/github-api"
 import {
   buildDefaultPerson,
   extractTwitterUsername,
@@ -38,6 +41,7 @@ import {
   type UserRecordData,
   type UserRecordPatch,
 } from "@/lib/user-record"
+import type { PersonalNote } from "@/lib/personal-note"
 
 function ContactRow({
   icon: Icon,
@@ -119,7 +123,16 @@ export default function UserPage() {
   const [targetName, setTargetName] = useState("")
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<
-    "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach" | null
+    | "subject"
+    | "linkedin"
+    | "x"
+    | "strava"
+    | "mrkoll"
+    | "company"
+    | "breach"
+    | "github"
+    | "notes"
+    | null
   >(null)
   const [subjectExpanded, setSubjectExpanded] = useState(true)
   const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(
@@ -137,7 +150,9 @@ export default function UserPage() {
   const [twitterState, setTwitterState] = useState<TwitterPanelState | null>(
     null
   )
+  const [githubState, setGithubState] = useState<GithubPanelState | null>(null)
   const [subjectUpdatedAt, setSubjectUpdatedAt] = useState<string | null>(null)
+  const [notes, setNotes] = useState<PersonalNote[]>([])
 
   const saveUserRecord = useCallback(
     async (patch: UserRecordPatch): Promise<UserRecordData | null> => {
@@ -178,6 +193,12 @@ export default function UserPage() {
               profile: data.data.twitter,
             })
           }
+          if (data.data.github) {
+            setGithubState({
+              status: "profile",
+              profile: data.data.github,
+            })
+          }
           setSubjectUpdatedAt(data.data.updatedAt ?? null)
           if (data.data.linkedin) {
             setLinkedinState({ status: "profile", profile: data.data.linkedin })
@@ -201,6 +222,19 @@ export default function UserPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    fetch(`/api/users/${userId}/notes`)
+      .then((res) => res.json())
+      .then(
+        (data: { ok: boolean; data?: PersonalNote[] }) => {
+          if (data.ok && data.data) {
+            setNotes(data.data)
+          }
+        }
+      )
+      .catch(() => {})
   }, [userId])
 
   const syncTwitterProfile = useCallback(
@@ -297,6 +331,134 @@ export default function UserPage() {
     const u = extractTwitterUsername(twitterState.profile, null)
     void syncTwitterProfile(u, true)
   }, [syncTwitterProfile, twitterState])
+
+  const syncGithubProfile = useCallback(
+    async (rawLogin: string, force: boolean = false) => {
+      const login = normalizeGithubLogin(rawLogin)
+      if (!login) {
+        setGithubState({
+          status: "error",
+          message: "Enter a valid GitHub username.",
+        })
+        return
+      }
+
+      setSelectedNode("github")
+      setGithubState({ status: "syncing", username: login })
+
+      try {
+        const response = await fetch("/api/github/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            username: login,
+            force,
+          }),
+        })
+        const data = (await response.json()) as {
+          ok: boolean
+          data?: UserRecordData
+          error?: string
+        }
+
+        if (data.ok && data.data?.github) {
+          setGithubState({
+            status: "profile",
+            profile: data.data.github,
+          })
+          setSubjectUpdatedAt(data.data.updatedAt ?? null)
+        } else {
+          setGithubState({
+            status: "error",
+            message: data.error ?? "Failed to load GitHub profile",
+          })
+        }
+      } catch {
+        setGithubState({
+          status: "error",
+          message: "Failed to load GitHub profile",
+        })
+      }
+    },
+    [userId]
+  )
+
+  const handleRetryGithubSearch = useCallback(async (searchQuery: string) => {
+    setGithubState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/github/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setGithubState({
+          status: "search-results",
+          results: data.data,
+          query: searchQuery,
+        })
+      } else {
+        setGithubState({ status: "error", message: data.error })
+      }
+    } catch {
+      setGithubState({
+        status: "error",
+        message: "Failed to search GitHub",
+      })
+    }
+  }, [])
+
+  const handleSelectGithubResult = useCallback(
+    async (result: GithubSearchResult) => {
+      await syncGithubProfile(result.login, false)
+    },
+    [syncGithubProfile]
+  )
+
+  const handleRefreshGithub = useCallback(() => {
+    if (githubState?.status !== "profile") {
+      return
+    }
+    void syncGithubProfile(githubState.profile.login, true)
+  }, [syncGithubProfile, githubState])
+
+  const handleGithubSelect = useCallback(async () => {
+    if (githubState?.status === "profile") {
+      setSelectedNode("github")
+      return
+    }
+
+    setSelectedNode("github")
+    setGithubState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/github/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: targetName }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setGithubState({
+          status: "search-results",
+          results: data.data,
+          query: targetName,
+        })
+      } else {
+        setGithubState({ status: "error", message: data.error })
+      }
+    } catch {
+      setGithubState({
+        status: "error",
+        message: "Failed to search GitHub",
+      })
+    }
+  }, [githubState, targetName])
 
   /* ─── LinkedIn ─── */
 
@@ -695,14 +857,93 @@ export default function UserPage() {
     }
   }, [twitterState, targetName])
 
+  const handleCreateNote = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/users/${userId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "" }),
+      })
+      const data = (await response.json()) as {
+        ok: boolean
+        data?: PersonalNote
+      }
+      if (data.ok && data.data) {
+        const created = data.data
+        setNotes((prev) => [created, ...prev])
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [userId])
+
+  const handleSaveNote = useCallback(
+    async (noteId: string, content: string) => {
+      try {
+        const response = await fetch(`/api/users/${userId}/notes/${noteId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        })
+        const data = (await response.json()) as {
+          ok: boolean
+          data?: PersonalNote
+        }
+        if (data.ok && data.data) {
+          const updated = data.data
+          setNotes((prev) => {
+            const next = prev.map((n) => (n.id === noteId ? updated : n))
+            return [...next].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            )
+          })
+        }
+      } catch {
+        /* ignore */
+      }
+    },
+    [userId]
+  )
+
+  const handleDeleteNote = useCallback(
+    async (noteId: string) => {
+      try {
+        const response = await fetch(`/api/users/${userId}/notes/${noteId}`, {
+          method: "DELETE",
+        })
+        const data = (await response.json()) as { ok: boolean }
+        if (data.ok) {
+          setNotes((prev) => prev.filter((n) => n.id !== noteId))
+        }
+      } catch {
+        /* ignore */
+      }
+    },
+    [userId]
+  )
+
   /* ─── Node Selection ─── */
 
   const handleSelectNode = useCallback(
-    (source: "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach") => {
+    (
+      source:
+        | "linkedin"
+        | "x"
+        | "github"
+        | "strava"
+        | "mrkoll"
+        | "company"
+        | "breach"
+        | "notes"
+    ) => {
       if (source === "linkedin") {
         handleLinkedinSelect()
       } else if (source === "x") {
         handleTwitterSelect()
+      } else if (source === "github") {
+        handleGithubSelect()
       } else if (source === "strava") {
         handleStravaSelect()
       } else if (source === "mrkoll") {
@@ -715,6 +956,7 @@ export default function UserPage() {
     },
     [
       handleLinkedinSelect,
+      handleGithubSelect,
       handleStravaSelect,
       handleMrkollSelect,
       handleTwitterSelect,
@@ -808,6 +1050,9 @@ export default function UserPage() {
             twitterProfile={
               twitterState?.status === "profile" ? twitterState.profile : null
             }
+            githubProfile={
+              githubState?.status === "profile" ? githubState.profile : null
+            }
             stravaProfile={
               stravaState?.status === "profile" ? stravaState.profile : null
             }
@@ -820,6 +1065,13 @@ export default function UserPage() {
             showCompanyNode={activeCompany !== null}
             breachResult={
               breachState?.status === "results" ? breachState.data : null
+            }
+            noteCount={notes.length}
+            notesPreviewLine={
+              notes[0]?.content.trim()
+                ? (notes[0].content.trim().split("\n")[0]?.slice(0, 120) ??
+                  null)
+                : null
             }
           />
         </div>
@@ -844,6 +1096,8 @@ export default function UserPage() {
             stravaState?.status === "profile" ? stravaState.profile : null,
           mrkollProfile:
             mrkollState?.status === "profile" ? mrkollState.profile : null,
+          githubProfile:
+            githubState?.status === "profile" ? githubState.profile : null,
         }}
         linkedinState={linkedinState}
         onSelectLinkedInResult={handleSelectLinkedInResult}
@@ -860,7 +1114,15 @@ export default function UserPage() {
         onSelectTwitterResult={handleSelectTwitterResult}
         onRetryTwitterSearch={handleRetryTwitterSearch}
         onRefreshTwitter={handleRefreshTwitter}
+        githubState={githubState}
+        onSelectGithubResult={handleSelectGithubResult}
+        onRetryGithubSearch={handleRetryGithubSearch}
+        onRefreshGithub={handleRefreshGithub}
         breachState={breachState}
+        notes={notes}
+        onCreateNote={handleCreateNote}
+        onSaveNote={handleSaveNote}
+        onDeleteNote={handleDeleteNote}
       />
     </div>
   )

@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client"
-import type { UserRecordData, UserTwitterProfile } from "@/lib/user-record"
+import type {
+  UserGithubProfile,
+  UserRecordData,
+  UserTwitterProfile,
+} from "@/lib/user-record"
 
 const twitterTweetSelect = {
   twitterTweetId: true,
@@ -23,9 +27,12 @@ export const userSelect = {
   activeCompany: true,
   krafman: true,
   twitter: true,
+  github: true,
   breach: true,
   twitterUsername: true,
   twitterFetchedAt: true,
+  githubUsername: true,
+  githubFetchedAt: true,
   twitterTweets: {
     orderBy: { postedAt: "desc" },
     take: 12,
@@ -43,6 +50,24 @@ export function toJsonInput(
   if (value === null) return Prisma.JsonNull
 
   return value as Prisma.InputJsonValue
+}
+
+function serializeGithubProfile(
+  github: UserWithTwitterCache["github"],
+  githubUsername: string | null,
+  githubFetchedAt: Date | null
+): UserGithubProfile | null {
+  if (!github) {
+    return null
+  }
+
+  const base = github as unknown as UserGithubProfile
+  return {
+    ...base,
+    login: base.login || githubUsername || "",
+    last_synced_at:
+      githubFetchedAt?.toISOString() ?? base.last_synced_at ?? null,
+  }
 }
 
 function serializeTwitterProfile(
@@ -100,6 +125,13 @@ export function serializeUserRecord(user: UserWithTwitterCache): UserRecordData 
     ),
     twitterUsername: user.twitterUsername,
     twitterFetchedAt: user.twitterFetchedAt?.toISOString() ?? null,
+    github: serializeGithubProfile(
+      user.github,
+      user.githubUsername,
+      user.githubFetchedAt
+    ),
+    githubUsername: user.githubUsername,
+    githubFetchedAt: user.githubFetchedAt?.toISOString() ?? null,
     breach: user.breach as UserRecordData["breach"],
     updatedAt: user.updatedAt.toISOString(),
   }

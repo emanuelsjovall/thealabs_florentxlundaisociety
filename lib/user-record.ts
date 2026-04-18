@@ -28,6 +28,49 @@ export interface UserTwitterTweet {
   readonly is_retweet: boolean
 }
 
+export interface GithubRepoSummary {
+  readonly name: string
+  readonly full_name: string
+  readonly html_url: string
+  readonly description: string | null
+  readonly stargazers_count: number
+  readonly language: string | null
+  readonly fork: boolean
+  readonly archived: boolean
+  readonly pushed_at: string | null
+  readonly updated_at: string
+}
+
+/** GitHub profile built from REST API user + repos (same public data as the profile page). */
+export interface UserGithubProfile {
+  readonly login: string
+  readonly github_numeric_id: number
+  readonly node_id?: string
+  readonly avatar_url: string
+  readonly html_url: string
+  readonly gravatar_id: string | null
+  readonly name: string | null
+  readonly company: string | null
+  readonly blog: string | null
+  readonly location: string | null
+  readonly email: string | null
+  readonly bio: string | null
+  readonly twitter_username: string | null
+  readonly hireable: boolean | null
+  readonly type: string
+  readonly site_admin: boolean
+  readonly public_repos: number
+  readonly public_gists: number
+  readonly followers: number
+  readonly following: number
+  readonly created_at: string
+  readonly updated_at: string
+  readonly repos: readonly GithubRepoSummary[]
+  /** Full GET /users/:login JSON for any extra fields GitHub returns. */
+  readonly api_user: Readonly<Record<string, unknown>>
+  readonly last_synced_at: string | null
+}
+
 export interface UserTwitterProfile {
   readonly handle: string
   readonly name: string
@@ -61,6 +104,9 @@ export type UserRecordData = {
   readonly twitter: UserTwitterProfile | null
   readonly twitterUsername: string | null
   readonly twitterFetchedAt: string | null
+  readonly github: UserGithubProfile | null
+  readonly githubUsername: string | null
+  readonly githubFetchedAt: string | null
   readonly breach: BreachSearchResult | null
   readonly updatedAt: string
 }
@@ -75,6 +121,8 @@ export type UserRecordPatch = {
   readonly krafman?: KrafmanCompanyProfile | null
   readonly twitter?: UserTwitterProfile | null
   readonly twitterUsername?: string | null
+  readonly github?: UserGithubProfile | null
+  readonly githubUsername?: string | null
   readonly breach?: BreachSearchResult | null
 }
 

@@ -1,7 +1,18 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
-import { X, Loader2, Search, MapPin, Mail, Phone, Globe } from "lucide-react"
+import { useState, useEffect, type ReactNode } from "react"
+import {
+  X,
+  Loader2,
+  Search,
+  MapPin,
+  Mail,
+  Phone,
+  Globe,
+  Plus,
+  Trash2,
+  ExternalLink,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { LinkedInProfile, LinkedInSearchResult } from "@/lib/linkedin"
 import type {
@@ -16,9 +27,14 @@ import type {
   MrkollCompanyEngagement,
 } from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
+import type { GithubSearchResult } from "@/lib/github-api"
 import type { TwitterSearchResult } from "@/lib/twitter-api"
-import type { UserTwitterProfile } from "@/lib/user-record"
+import type {
+  UserGithubProfile,
+  UserTwitterProfile,
+} from "@/lib/user-record"
 import type { BreachSearchResult, BreachRecord } from "@/lib/breach"
+import type { PersonalNote } from "@/lib/personal-note"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -218,6 +234,66 @@ function TwitterSearchResultsList({
                 {result.description}
               </p>
             ) : null}
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ─── GitHub Search Results ─── */
+
+function GithubSearchResultsList({
+  results,
+  searchQuery,
+  onSelect,
+  onRetry,
+}: {
+  results: readonly GithubSearchResult[]
+  searchQuery: string
+  onSelect: (result: GithubSearchResult) => void
+  onRetry: (query: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <SearchBar
+        initialQuery={searchQuery}
+        placeholder="Search GitHub users..."
+        onSearch={onRetry}
+      />
+      {results.length === 0 ? (
+        <p className="py-12 text-center text-xs text-neutral-600">
+          No users found
+        </p>
+      ) : (
+        <p className="mb-4 text-[10px] text-neutral-600">
+          {results.length} potential{" "}
+          {results.length === 1 ? "match" : "matches"}
+        </p>
+      )}
+      {results.map((result) => (
+        <button
+          key={result.login}
+          type="button"
+          onClick={() => onSelect(result)}
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+        >
+          {result.avatar_url ? (
+            <img
+              src={result.avatar_url}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+              {result.login.charAt(0)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-mono text-sm text-foreground">
+              {result.login}
+            </p>
+            <p className="mt-0.5 text-[10px] text-neutral-600">{result.type}</p>
           </div>
         </button>
       ))}
@@ -437,6 +513,7 @@ interface SubjectPanelData {
   readonly linkedinProfile: LinkedInProfile | null
   readonly stravaProfile: StravaProfile | null
   readonly mrkollProfile: MrkollProfile | null
+  readonly githubProfile: UserGithubProfile | null
 }
 
 function SubjectContent({ subject }: { subject: SubjectPanelData }) {
@@ -470,6 +547,12 @@ function SubjectContent({ subject }: { subject: SubjectPanelData }) {
             ]
               .filter(Boolean)
               .join(" · ") || "Profile loaded",
+        }
+      : null,
+    subject.githubProfile
+      ? {
+          label: "GitHub",
+          value: `@${subject.githubProfile.login} · ${subject.githubProfile.public_repos} repos`,
         }
       : null,
   ].filter(Boolean) as { label: string; value: string }[]
@@ -514,6 +597,94 @@ function SubjectContent({ subject }: { subject: SubjectPanelData }) {
             ))}
           </div>
         </Section>
+      )}
+    </div>
+  )
+}
+
+function NoteEditor({
+  note,
+  onSave,
+  onDelete,
+}: {
+  readonly note: PersonalNote
+  readonly onSave: (content: string) => Promise<void>
+  readonly onDelete: () => void
+}) {
+  const [value, setValue] = useState(note.content)
+
+  useEffect(() => {
+    setValue(note.content)
+  }, [note.content])
+
+  return (
+    <Card>
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <p className="font-mono text-[10px] text-neutral-600">
+          {new Date(note.updatedAt).toLocaleString()}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void onDelete()
+          }}
+          className="rounded p-1 text-neutral-600 transition-colors hover:bg-neutral-800 hover:text-red-400"
+          aria-label="Delete note"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <textarea
+        className="min-h-[120px] w-full resize-y rounded-md border border-neutral-800 bg-neutral-950/80 px-3 py-2 text-sm leading-relaxed text-neutral-200 placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          if (value !== note.content) {
+            void onSave(value)
+          }
+        }}
+        placeholder="Write a note..."
+      />
+    </Card>
+  )
+}
+
+function NotesPanelContent({
+  notes,
+  onCreateNote,
+  onSaveNote,
+  onDeleteNote,
+}: {
+  readonly notes: readonly PersonalNote[]
+  readonly onCreateNote: () => Promise<void>
+  readonly onSaveNote: (id: string, content: string) => Promise<void>
+  readonly onDeleteNote: (id: string) => Promise<void>
+}) {
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={() => void onCreateNote()}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900/60 py-2.5 text-xs text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-900"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        New note
+      </button>
+      {notes.length === 0 ? (
+        <p className="py-8 text-center text-xs text-neutral-600">
+          No notes yet. Add one to capture free-text findings.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {notes.map((note) => (
+            <NoteEditor
+              key={note.id}
+              note={note}
+              onSave={(content) => onSaveNote(note.id, content)}
+              onDelete={() => void onDeleteNote(note.id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
@@ -1331,6 +1502,181 @@ function TwitterProfileContent({
   )
 }
 
+/* ─── GitHub Content ─── */
+
+function GithubProfileContent({
+  profile,
+  onRefresh,
+}: {
+  profile: UserGithubProfile
+  onRefresh: () => void
+}) {
+  const d = profile
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 gap-4">
+          {d.avatar_url ? (
+            <img
+              src={d.avatar_url}
+              alt=""
+              className="h-16 w-16 shrink-0 rounded-full object-cover"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <h3 className="truncate font-mono text-xl font-light text-foreground">
+              {d.login}
+            </h3>
+            {d.name ? (
+              <p className="mt-1 text-sm text-neutral-400">{d.name}</p>
+            ) : null}
+            <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+              {d.bio ?? ""}
+            </p>
+            <a
+              href={d.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Open on GitHub
+            </a>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="shrink-0 rounded-lg border border-neutral-700 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-foreground"
+        >
+          REFRESH
+        </button>
+      </div>
+
+      {d.last_synced_at ? (
+        <Section label="Cache">
+          <p className="text-sm text-neutral-500">
+            Synced{" "}
+            {new Date(d.last_synced_at).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </p>
+        </Section>
+      ) : null}
+
+      <Section label="Stats">
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Followers", value: d.followers.toLocaleString() },
+            { label: "Following", value: d.following.toLocaleString() },
+            { label: "Public repos", value: d.public_repos.toLocaleString() },
+            { label: "Public gists", value: d.public_gists.toLocaleString() },
+          ].map(({ label, value }) => (
+            <Card key={label}>
+              <p className="text-base font-light text-foreground">{value}</p>
+              <p className="mt-0.5 text-[10px] text-neutral-600">{label}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      {d.twitter_username || d.email || d.company || d.location || d.blog ? (
+        <Section label="Details">
+          <div className="space-y-2">
+            {d.company ? (
+              <Card>
+                <p className="text-xs text-neutral-600">Company</p>
+                <p className="mt-1 text-sm text-foreground">{d.company}</p>
+              </Card>
+            ) : null}
+            {d.location ? (
+              <Card>
+                <p className="text-xs text-neutral-600">Location</p>
+                <p className="mt-1 text-sm text-foreground">{d.location}</p>
+              </Card>
+            ) : null}
+            {d.blog ? (
+              <Card>
+                <p className="text-xs text-neutral-600">Website</p>
+                <a
+                  href={
+                    d.blog.startsWith("http") ? d.blog : `https://${d.blog}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block text-sm text-neutral-300 hover:text-foreground"
+                >
+                  {d.blog}
+                </a>
+              </Card>
+            ) : null}
+            {d.twitter_username ? (
+              <Card>
+                <p className="text-xs text-neutral-600">
+                  X handle (from GitHub profile)
+                </p>
+                <p className="mt-1 font-mono text-sm text-foreground">
+                  @{d.twitter_username}
+                </p>
+              </Card>
+            ) : null}
+            {d.email ? (
+              <Card>
+                <p className="text-xs text-neutral-600">Public email</p>
+                <p className="mt-1 text-sm text-foreground">{d.email}</p>
+              </Card>
+            ) : null}
+          </div>
+        </Section>
+      ) : null}
+
+      <Section label="Repositories (recent)">
+        {d.repos.length === 0 ? (
+          <p className="text-sm text-neutral-600">No public repos listed.</p>
+        ) : (
+          <div className="space-y-2">
+            {d.repos.map((repo) => (
+              <Card key={repo.full_name}>
+                <a
+                  href={repo.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-sm text-foreground hover:text-neutral-200"
+                >
+                  {repo.full_name}
+                </a>
+                {repo.description ? (
+                  <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
+                    {repo.description}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-neutral-700">
+                  <span>{repo.stargazers_count} stars</span>
+                  {repo.language ? <span>{repo.language}</span> : null}
+                  {repo.archived ? <span>archived</span> : null}
+                  {repo.fork ? <span>fork</span> : null}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section label="Raw API user object">
+        <Card>
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-relaxed text-neutral-500">
+            {JSON.stringify(d.api_user, null, 2)}
+          </pre>
+        </Card>
+      </Section>
+    </div>
+  )
+}
+
 /* ─── Breach Results ─── */
 
 function BreachRecordCard({ record }: { record: BreachRecord }) {
@@ -1424,6 +1770,17 @@ export type TwitterPanelState =
   | { status: "profile"; profile: UserTwitterProfile }
   | { status: "error"; message: string }
 
+export type GithubPanelState =
+  | { status: "searching" }
+  | {
+      status: "search-results"
+      results: readonly GithubSearchResult[]
+      query: string
+    }
+  | { status: "syncing"; username: string }
+  | { status: "profile"; profile: UserGithubProfile }
+  | { status: "error"; message: string }
+
 export type BreachPanelState =
   | { status: "searching" }
   | { status: "results"; data: BreachSearchResult }
@@ -1437,7 +1794,17 @@ export type KrafmanPanelState =
 /* ─── Detail Panel ─── */
 
 interface DetailPanelProps {
-  source: "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach" | null
+  source:
+    | "subject"
+    | "linkedin"
+    | "x"
+    | "strava"
+    | "mrkoll"
+    | "company"
+    | "breach"
+    | "github"
+    | "notes"
+    | null
   onClose: () => void
   subject: SubjectPanelData
   linkedinState: LinkedInPanelState | null
@@ -1455,7 +1822,15 @@ interface DetailPanelProps {
   onSelectTwitterResult: (result: TwitterSearchResult) => void
   onRetryTwitterSearch: (query: string) => void
   onRefreshTwitter: () => void
+  githubState: GithubPanelState | null
+  onSelectGithubResult: (result: GithubSearchResult) => void
+  onRetryGithubSearch: (query: string) => void
+  onRefreshGithub: () => void
   breachState: BreachPanelState | null
+  notes: readonly PersonalNote[]
+  onCreateNote: () => Promise<void>
+  onSaveNote: (id: string, content: string) => Promise<void>
+  onDeleteNote: (id: string) => Promise<void>
 }
 
 export function DetailPanel({
@@ -1477,7 +1852,15 @@ export function DetailPanel({
   onSelectTwitterResult,
   onRetryTwitterSearch,
   onRefreshTwitter,
+  githubState,
+  onSelectGithubResult,
+  onRetryGithubSearch,
+  onRefreshGithub,
   breachState,
+  notes,
+  onCreateNote,
+  onSaveNote,
+  onDeleteNote,
 }: DetailPanelProps) {
   const open = source !== null
 
@@ -1603,6 +1986,40 @@ export function DetailPanel({
     }
   }
 
+  function renderGithubContent(): ReactNode {
+    if (!githubState) return null
+    switch (githubState.status) {
+      case "searching":
+        return <LoadingSpinner text="Searching GitHub..." />
+      case "search-results":
+        return (
+          <GithubSearchResultsList
+            results={githubState.results}
+            searchQuery={githubState.query}
+            onSelect={onSelectGithubResult}
+            onRetry={onRetryGithubSearch}
+          />
+        )
+      case "syncing":
+        return (
+          <LoadingSpinner text={`Loading ${githubState.username}...`} />
+        )
+      case "profile":
+        return (
+          <GithubProfileContent
+            profile={githubState.profile}
+            onRefresh={onRefreshGithub}
+          />
+        )
+      case "error":
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {githubState.message}
+          </p>
+        )
+    }
+  }
+
   function renderBreachContent(): ReactNode {
     if (!breachState) return null
     switch (breachState.status) {
@@ -1653,6 +2070,10 @@ export function DetailPanel({
         return twitterState?.status === "search-results"
           ? "X / TWITTER — SELECT ACCOUNT"
           : "X / TWITTER"
+      case "github":
+        return githubState?.status === "search-results"
+          ? "GITHUB — SELECT USER"
+          : "GITHUB"
       case "mrkoll":
         return mrkollState?.status === "search-results"
           ? "MRKOLL — SELECT PERSON"
@@ -1661,6 +2082,8 @@ export function DetailPanel({
         return "COMPANY"
       case "breach":
         return "BREACH"
+      case "notes":
+        return "NOTES"
       default:
         return ""
     }
@@ -1680,8 +2103,12 @@ export function DetailPanel({
         return "bg-emerald-600/40"
       case "x":
         return "bg-sky-600/30"
+      case "github":
+        return "bg-[#238636]/35"
       case "breach":
         return "bg-red-600/40"
+      case "notes":
+        return "bg-amber-600/35"
       default:
         return "bg-neutral-700/60"
     }
@@ -1701,8 +2128,12 @@ export function DetailPanel({
         return "text-emerald-500"
       case "x":
         return "text-sky-400"
+      case "github":
+        return "text-[#3fb950]"
       case "breach":
         return "text-red-500"
+      case "notes":
+        return "text-amber-400"
       default:
         return "text-neutral-400"
     }
@@ -1749,9 +2180,18 @@ export function DetailPanel({
         {source === "linkedin" && renderLinkedinContent()}
         {source === "strava" && renderStravaContent()}
         {source === "x" && renderTwitterContent()}
+        {source === "github" && renderGithubContent()}
         {source === "mrkoll" && renderMrkollContent()}
         {source === "company" && renderKrafmanContent()}
         {source === "breach" && renderBreachContent()}
+        {source === "notes" && (
+          <NotesPanelContent
+            notes={notes}
+            onCreateNote={onCreateNote}
+            onSaveNote={onSaveNote}
+            onDeleteNote={onDeleteNote}
+          />
+        )}
       </div>
     </div>
   )

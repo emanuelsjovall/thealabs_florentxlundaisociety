@@ -49,6 +49,8 @@ export async function PATCH(
     krafman?: unknown | null
     twitter?: unknown | null
     twitterUsername?: string | null
+    github?: unknown | null
+    githubUsername?: string | null
     breach?: unknown | null
   }
 
@@ -70,6 +72,11 @@ export async function PATCH(
         body.twitterUsername === undefined
           ? undefined
           : body.twitterUsername?.trim().replace(/^@+/, "") || null,
+      github: toJsonInput(body.github),
+      githubUsername:
+        body.githubUsername === undefined
+          ? undefined
+          : body.githubUsername?.trim() || null,
       breach: toJsonInput(body.breach),
       updatedAt: new Date(),
     },

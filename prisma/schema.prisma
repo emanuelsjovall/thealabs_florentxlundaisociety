@@ -8,24 +8,28 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  name           String
-  normalizedName String   @unique @map("normalized_name")
-  person         Json?
-  linkedinUrl    String?  @unique @map("linkedin_url")
-  linkedin       Json?
-  strava         Json?
-  mrkoll         Json?
-  activeCompany  Json?    @map("active_company")
-  krafman        Json?
+  id               String         @id @default(cuid())
+  name             String
+  normalizedName   String         @unique @map("normalized_name")
+  person           Json?
+  linkedinUrl      String?        @unique @map("linkedin_url")
+  linkedin         Json?
+  strava           Json?
+  mrkoll           Json?
+  activeCompany    Json?          @map("active_company")
+  krafman          Json?
   twitter          Json?
-  twitterUsername String?       @map("twitter_username")
-  twitterUserId   String?       @map("twitter_user_id")
-  twitterFetchedAt DateTime?    @map("twitter_fetched_at")
+  twitterUsername  String?        @map("twitter_username")
+  twitterUserId    String?        @map("twitter_user_id")
+  twitterFetchedAt DateTime?      @map("twitter_fetched_at")
+  github           Json?
+  githubUsername   String?        @map("github_username")
+  githubFetchedAt  DateTime?      @map("github_fetched_at")
   breach           Json?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  twitterTweets  TwitterTweet[]
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  twitterTweets    TwitterTweet[]
+  notes            Note[]
 
   @@map("users")
 }
@@ -40,23 +44,35 @@ model LinkedinSearch {
 }
 
 model TwitterTweet {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  twitterTweetId String   @unique @map("twitter_tweet_id")
-  twitterAuthorId String? @map("twitter_author_id")
-  text           String
-  postedAt       DateTime @map("posted_at")
-  likes          Int      @default(0)
-  retweets       Int      @default(0)
-  replies        Int      @default(0)
-  views          Int      @default(0)
-  isRetweet      Boolean  @default(false) @map("is_retweet")
-  isReply        Boolean  @default(false) @map("is_reply")
-  raw            Json?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  twitterTweetId  String   @unique @map("twitter_tweet_id")
+  twitterAuthorId String?  @map("twitter_author_id")
+  text            String
+  postedAt        DateTime @map("posted_at")
+  likes           Int      @default(0)
+  retweets        Int      @default(0)
+  replies         Int      @default(0)
+  views           Int      @default(0)
+  isRetweet       Boolean  @default(false) @map("is_retweet")
+  isReply         Boolean  @default(false) @map("is_reply")
+  raw             Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, postedAt(sort: Desc)])
   @@map("twitter_tweets")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("notes")
 }

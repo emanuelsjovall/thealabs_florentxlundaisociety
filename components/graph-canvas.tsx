@@ -6,7 +6,7 @@ import type { LinkedInProfile } from "@/lib/linkedin"
 import type { StravaProfile } from "@/lib/strava"
 import type { MrkollProfile } from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
-import type { UserTwitterProfile } from "@/lib/user-record"
+import type { UserGithubProfile, UserTwitterProfile } from "@/lib/user-record"
 import type { BreachSearchResult } from "@/lib/breach"
 
 function LinkedinNode({
@@ -210,6 +210,51 @@ function CompanyNode({
   )
 }
 
+function NotesNode({
+  onSelect,
+  noteCount,
+  previewLine,
+}: {
+  onSelect: () => void
+  noteCount: number
+  previewLine: string | null
+}) {
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-amber-400">
+          NOTES
+        </span>
+      </div>
+      {noteCount > 0 ? (
+        <>
+          <p className="text-base font-light text-foreground">
+            {noteCount} note{noteCount !== 1 ? "s" : ""}
+          </p>
+          {previewLine ? (
+            <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">
+              {previewLine}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-neutral-600">Personal notes</p>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to open</p>
+          <p className="mt-1 text-xs text-neutral-700">
+            Add free-text notes for this subject
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 function BreachNode({
   onSelect,
   result,
@@ -298,6 +343,56 @@ function XNode({
   )
 }
 
+function GithubNode({
+  onSelect,
+  profile,
+}: {
+  onSelect: () => void
+  profile: UserGithubProfile | null
+}) {
+  const d = profile
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-[#3fb950]">
+          GITHUB
+        </span>
+      </div>
+      {d ? (
+        <>
+          <p className="font-mono text-base font-light text-foreground">
+            {d.login}
+          </p>
+          <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">
+            {d.bio ?? d.name ?? ""}
+          </p>
+          <div className="mt-3 space-y-1.5">
+            <p className="text-xs text-neutral-500">
+              {d.public_repos.toLocaleString()} public repos ·{" "}
+              {d.followers.toLocaleString()} followers
+            </p>
+            {d.location ? (
+              <p className="text-xs text-neutral-600">{d.location}</p>
+            ) : null}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to search</p>
+          <p className="mt-1 text-xs text-neutral-700">
+            Find GitHub users (API)
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 interface Viewport {
   scale: number
   x: number
@@ -305,15 +400,28 @@ interface Viewport {
 }
 
 interface GraphCanvasProps {
-  onSelect: (source: "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach") => void
+  onSelect: (
+    source:
+      | "linkedin"
+      | "x"
+      | "github"
+      | "strava"
+      | "mrkoll"
+      | "company"
+      | "breach"
+      | "notes"
+  ) => void
   onDeselect: () => void
   linkedinProfile: LinkedInProfile | null
   twitterProfile: UserTwitterProfile | null
+  githubProfile: UserGithubProfile | null
   stravaProfile: StravaProfile | null
   mrkollProfile: MrkollProfile | null
   krafmanProfile: KrafmanCompanyProfile | null
   showCompanyNode: boolean
   breachResult: BreachSearchResult | null
+  noteCount: number
+  notesPreviewLine: string | null
 }
 
 export function GraphCanvas({
@@ -321,19 +429,24 @@ export function GraphCanvas({
   onDeselect,
   linkedinProfile,
   twitterProfile,
+  githubProfile,
   stravaProfile,
   mrkollProfile,
   krafmanProfile,
   showCompanyNode,
   breachResult,
+  noteCount,
+  notesPreviewLine,
 }: GraphCanvasProps) {
   const [showLinkedin, setShowLinkedin] = useState(false)
   const [showX, setShowX] = useState(false)
+  const [showGithub, setShowGithub] = useState(false)
   const [showStrava, setShowStrava] = useState(false)
   const [showMrkoll, setShowMrkoll] = useState(false)
   const [showCompany, setShowCompany] = useState(false)
   const [showBreach, setShowBreach] = useState(false)
-  const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 0, y: 0 })
+  const [showNotes, setShowNotes] = useState(false)
+  const [viewport, setViewport] = useState<Viewport>({ scale: 0.7, x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
@@ -348,12 +461,16 @@ export function GraphCanvas({
     const t3 = setTimeout(() => setShowStrava(true), 1500)
     const t4 = setTimeout(() => setShowMrkoll(true), 1000)
     const t5 = setTimeout(() => setShowBreach(true), 1800)
+    const t6 = setTimeout(() => setShowNotes(true), 1200)
+    const t7 = setTimeout(() => setShowGithub(true), 2100)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
       clearTimeout(t4)
       clearTimeout(t5)
+      clearTimeout(t6)
+      clearTimeout(t7)
     }
   }, [])
 
@@ -461,8 +578,8 @@ export function GraphCanvas({
           <line
             x1="50%"
             y1="50%"
-            x2="24%"
-            y2="36%"
+            x2="30%"
+            y2="32%"
             stroke="rgba(255,255,255,0.06)"
             strokeWidth="1"
             strokeDasharray="3 6"
@@ -487,6 +604,19 @@ export function GraphCanvas({
           <line
             x1="50%"
             y1="50%"
+            x2="7%"
+            y2="44%"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            className={cn(
+              "transition-opacity duration-700",
+              showGithub ? "opacity-100" : "opacity-0"
+            )}
+          />
+          <line
+            x1="50%"
+            y1="50%"
             x2="76%"
             y2="32%"
             stroke="rgba(255,255,255,0.06)"
@@ -500,7 +630,7 @@ export function GraphCanvas({
           <line
             x1="50%"
             y1="50%"
-            x2="30%"
+            x2="34%"
             y2="65%"
             stroke="rgba(255,255,255,0.06)"
             strokeWidth="1"
@@ -523,9 +653,22 @@ export function GraphCanvas({
               showBreach ? "opacity-100" : "opacity-0"
             )}
           />
+          <line
+            x1="50%"
+            y1="50%"
+            x2="22%"
+            y2="88%"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            className={cn(
+              "transition-opacity duration-700",
+              showNotes ? "opacity-100" : "opacity-0"
+            )}
+          />
           {showCompanyNode && (
             <line
-              x1="30%"
+              x1="34%"
               y1="65%"
               x2="52%"
               y2="82%"
@@ -546,7 +689,7 @@ export function GraphCanvas({
         </div>
 
         {/* LinkedIn node */}
-        <div className="absolute top-[36%] left-[24%] -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-[32%] left-[30%] -translate-x-1/2 -translate-y-1/2">
           <div
             className={cn(
               "transition-all duration-500 ease-out",
@@ -576,6 +719,23 @@ export function GraphCanvas({
           </div>
         </div>
 
+        {/* GitHub node */}
+        <div className="absolute top-[44%] left-[7%] -translate-x-1/2 -translate-y-1/2">
+          <div
+            className={cn(
+              "transition-all duration-500 ease-out",
+              showGithub
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-3 opacity-0"
+            )}
+          >
+            <GithubNode
+              onSelect={() => onSelect("github")}
+              profile={githubProfile}
+            />
+          </div>
+        </div>
+
         {/* Strava node */}
         <div className="absolute top-[32%] left-[76%] -translate-x-1/2 -translate-y-1/2">
           <div
@@ -594,7 +754,7 @@ export function GraphCanvas({
         </div>
 
         {/* Mrkoll node */}
-        <div className="absolute top-[65%] left-[30%] -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-[65%] left-[34%] -translate-x-1/2 -translate-y-1/2">
           <div
             className={cn(
               "transition-all duration-500 ease-out",
@@ -606,6 +766,24 @@ export function GraphCanvas({
             <MrkollNode
               onSelect={() => onSelect("mrkoll")}
               profile={mrkollProfile}
+            />
+          </div>
+        </div>
+
+        {/* Notes node */}
+        <div className="absolute top-[88%] left-[22%] -translate-x-1/2 -translate-y-1/2">
+          <div
+            className={cn(
+              "transition-all duration-500 ease-out",
+              showNotes
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-3 opacity-0"
+            )}
+          >
+            <NotesNode
+              onSelect={() => onSelect("notes")}
+              noteCount={noteCount}
+              previewLine={notesPreviewLine}
             />
           </div>
         </div>
