@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 import type {
+  LinkedInPost,
   LinkedInProfile,
   Result,
   ScrapeLinkedInProfileOptions,
@@ -83,35 +84,6 @@ const PROFILE_TOOL_SCHEMA = {
           required: ["name", "endorsementCount"],
         },
       },
-      posts: {
-        type: "array" as const,
-        items: {
-          type: "object" as const,
-          properties: {
-            text: { type: ["string", "null"] as const },
-            date: {
-              type: ["string", "null"] as const,
-              description: "When the post was published, e.g. '2w', '3mo', '1yr'",
-            },
-            likes: { type: ["number", "null"] as const },
-            comments: { type: ["number", "null"] as const },
-            reposts: { type: ["number", "null"] as const },
-            isRepost: {
-              type: "boolean" as const,
-              description:
-                "True if LinkedIn shows this row as a repost/reshare (e.g. heading like 'Name reposted this', nested quoted update, or repost framing). False if it is original content authored by the profile owner.",
-            },
-          },
-          required: [
-            "text",
-            "date",
-            "likes",
-            "comments",
-            "reposts",
-            "isRepost",
-          ],
-        },
-      },
     },
     required: [
       "name",
@@ -122,7 +94,6 @@ const PROFILE_TOOL_SCHEMA = {
       "experiences",
       "educations",
       "skills",
-      "posts",
     ],
   },
 };
@@ -131,24 +102,38 @@ function log(msg: string): void {
   console.log(`[scraper] ${msg}`);
 }
 
+interface ScrollOptions {
+  readonly step?: number;
+  readonly delay?: number;
+  readonly settleTime?: number;
+  readonly maxPasses?: number;
+}
+
 async function scrollToBottom(
   page: import("playwright").Page,
-  label: string
+  label: string,
+  options?: ScrollOptions
 ): Promise<void> {
+  const step = options?.step ?? 400;
+  const delay = options?.delay ?? 400;
+  const settleTime = options?.settleTime ?? 1_500;
+  const maxPasses = options?.maxPasses ?? 5;
+
   let previousHeight = 0;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < maxPasses; attempt++) {
     const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
     log(`  scrolling ${label} (pass ${attempt + 1}, height: ${scrollHeight})`);
 
-    await page.evaluate(async () => {
-      const step = 400;
-      const delay = 400;
-      for (let y = 0; y < document.body.scrollHeight; y += step) {
-        window.scrollTo(0, y);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    });
-    await page.waitForTimeout(1_500);
+    await page.evaluate(
+      async ({ step, delay }) => {
+        for (let y = 0; y < document.body.scrollHeight; y += step) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, delay));
+        }
+      },
+      { step, delay }
+    );
+    await page.waitForTimeout(settleTime);
 
     const currentHeight = await page.evaluate(
       () => document.body.scrollHeight
@@ -158,23 +143,91 @@ async function scrollToBottom(
   }
 }
 
-function normalizeLinkedInPosts(
-  raw: unknown
-): LinkedInProfile["posts"] {
-  if (!Array.isArray(raw)) {
-    return [];
-  }
+async function scrapePostsFromPage(
+  page: import("playwright").Page
+): Promise<readonly LinkedInPost[]> {
+  return page.evaluate(() => {
+    const posts: {
+      text: string | null;
+      date: string | null;
+      likes: number | null;
+      comments: number | null;
+      reposts: number | null;
+      isRepost: boolean;
+    }[] = [];
 
-  return raw.map((entry): LinkedInProfile["posts"][number] => {
-    const post = entry as Record<string, unknown>;
-    return {
-      text: typeof post.text === "string" ? post.text : null,
-      date: typeof post.date === "string" ? post.date : null,
-      likes: typeof post.likes === "number" ? post.likes : null,
-      comments: typeof post.comments === "number" ? post.comments : null,
-      reposts: typeof post.reposts === "number" ? post.reposts : null,
-      isRepost: post.isRepost === true,
-    };
+    const containers = document.querySelectorAll(
+      ".feed-shared-update-v2, [data-urn*='activity']"
+    );
+
+    for (const container of containers) {
+      const headerText = container
+        .querySelector(
+          ".update-components-header__text-view, .feed-shared-update-v2__description-wrapper .update-components-header"
+        )
+        ?.textContent?.trim() ?? "";
+      const isRepost = /reposted/i.test(headerText);
+
+      const textEl = container.querySelector(
+        ".feed-shared-update-v2__description .break-words, " +
+        ".update-components-text .break-words, " +
+        ".feed-shared-text .break-words, " +
+        "span.break-words"
+      );
+      const text = textEl?.textContent?.trim() ?? null;
+
+      const timeEl = container.querySelector("time");
+      const date = timeEl?.textContent?.trim() ?? null;
+
+      const socialBar = container.querySelector(
+        ".social-details-social-counts, .feed-shared-social-counts"
+      );
+
+      let likes: number | null = null;
+      let comments: number | null = null;
+      let reposts: number | null = null;
+
+      if (socialBar) {
+        const reactionsEl = socialBar.querySelector(
+          ".social-details-social-counts__reactions-count, " +
+          "[data-test-id='social-actions__reaction-count'], " +
+          "button[aria-label*='reaction'], button[aria-label*='like']"
+        );
+        const reactionsText =
+          reactionsEl?.textContent?.trim() ??
+          reactionsEl?.getAttribute("aria-label") ??
+          null;
+        if (reactionsText) {
+          const m = reactionsText.replace(/,/g, "").match(/(\d+)/);
+          likes = m ? parseInt(m[1], 10) : null;
+        }
+
+        const spans = socialBar.querySelectorAll(
+          "button[aria-label], span, a"
+        );
+        for (const span of spans) {
+          const label =
+            span.getAttribute("aria-label") ??
+            span.textContent ??
+            "";
+          const cleaned = label.toLowerCase();
+          if (/comment/i.test(cleaned)) {
+            const m = cleaned.replace(/,/g, "").match(/(\d+)/);
+            if (m) comments = parseInt(m[1], 10);
+          }
+          if (/repost/i.test(cleaned)) {
+            const m = cleaned.replace(/,/g, "").match(/(\d+)/);
+            if (m) reposts = parseInt(m[1], 10);
+          }
+        }
+      }
+
+      if (text || date) {
+        posts.push({ text, date, likes, comments, reposts, isRepost });
+      }
+    }
+
+    return posts;
   });
 }
 
@@ -280,7 +333,6 @@ export async function scrapeLinkedInProfile(
     const detailPages = [
       { url: `${profileBase}/details/experience/`, label: "experience" },
       { url: `${profileBase}/details/education/`, label: "education" },
-      { url: `${profileBase}/recent-activity/all/`, label: "posts" },
     ];
 
     const detailHtmlParts: string[] = [];
@@ -302,6 +354,23 @@ export async function scrapeLinkedInProfile(
       }
     }
 
+    let posts: readonly LinkedInPost[] = [];
+    try {
+      log("loading posts page...");
+      await session.page.goto(`${profileBase}/recent-activity/all/`, {
+        waitUntil: "domcontentloaded",
+        timeout,
+      });
+      await scrollToBottom(session.page, "posts", {
+        delay: 150,
+        settleTime: 800,
+      });
+      posts = await scrapePostsFromPage(session.page);
+      log(`extracted ${posts.length} posts from DOM`);
+    } catch {
+      log("skipped posts (page not found or error)");
+    }
+
     const allHtml = [mainHtml, ...detailHtmlParts].join("\n");
 
     const cleanedHtml = stripHtml(allHtml);
@@ -321,8 +390,6 @@ export async function scrapeLinkedInProfile(
         {
           role: "user",
           content: `Extract the LinkedIn profile data from this HTML. Only extract what is explicitly present — use null for missing fields. For dates, preserve the original format (e.g., "Jan 2020", "2019").
-
-For each activity/post row: set isRepost to true when LinkedIn indicates a repost or reshare (examples: text like "reposted this", "You reposted", nested/quoted update showing someone else's post being shared). Set isRepost to false only for updates clearly authored as original posts by the profile owner.
 
 ${cleanedHtml}`,
         },
@@ -353,7 +420,7 @@ ${cleanedHtml}`,
       experiences: (extracted.experiences as LinkedInProfile["experiences"]) ?? [],
       educations: (extracted.educations as LinkedInProfile["educations"]) ?? [],
       skills: (extracted.skills as LinkedInProfile["skills"]) ?? [],
-      posts: normalizeLinkedInPosts(extracted.posts),
+      posts,
     };
 
     return { ok: true, data: profile };
