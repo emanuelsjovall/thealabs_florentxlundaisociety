@@ -31,6 +31,9 @@ pnpm-debug.log*
 # env files
 .env*.local
 
+# linkedin session cookies
+.linkedin-session.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
