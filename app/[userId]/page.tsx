@@ -4,8 +4,10 @@ import Link from "next/link"
 import { useState, useCallback, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { GraphCanvas } from "@/components/graph-canvas"
 import { DetailPanel } from "@/components/detail-panel"
+import { ChatPanel } from "@/components/chat-panel"
 import type {
   LinkedInPanelState,
   StravaPanelState,
@@ -38,12 +40,6 @@ interface PersonNodeProps {
 function PersonNode({ person, onSelect }: PersonNodeProps) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-700">
-      <div className="mb-3">
-        <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-600">
-          SUBJECT
-        </span>
-      </div>
-
       <button
         type="button"
         onClick={onSelect}
@@ -61,6 +57,7 @@ export default function UserPage() {
 
   const [targetName, setTargetName] = useState("")
   const [loading, setLoading] = useState(true)
+  const [chatActive, setChatActive] = useState(false)
   const [selectedNode, setSelectedNode] = useState<
     | "subject"
     | "linkedin"
@@ -795,9 +792,16 @@ export default function UserPage() {
       />
 
       {/* Left sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-neutral-800 bg-background p-6">
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-56 flex-col border-r border-neutral-800 bg-background p-5">
         <div className="mb-6 shrink-0">
-          <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">
+          <Link
+            href="/"
+            className="mb-4 inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3 w-3 shrink-0" />
+            <span>Back to homescreen</span>
+          </Link>
+          <span className="block font-mono text-xs tracking-[0.3em] text-neutral-500">
             THEA
           </span>
           <p className="mt-1.5 text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
@@ -808,26 +812,29 @@ export default function UserPage() {
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <PersonNode person={subject} onSelect={handleSelectSubject} />
         </div>
-
-        <div className="shrink-0 border-t border-neutral-800 pt-6">
-          <Link
-            href="/"
-            className="inline-flex w-fit max-w-full items-center gap-2 rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3 shrink-0" />
-            <span>Back to homescreen</span>
-          </Link>
-        </div>
       </aside>
 
       {/* Main */}
       <main
+        className="flex flex-col"
         style={{
-          marginLeft: "288px",
+          marginLeft: "224px",
+          marginRight: selectedNode ? "420px" : "0px",
+          transition: "margin 500ms cubic-bezier(0.4, 0, 0.2, 1)",
           height: "100%",
         }}
       >
-        <div className="h-full animate-in duration-500 fade-in">
+        <div
+          className="relative min-h-0"
+          style={{
+            flexGrow: chatActive ? 0 : 1,
+            flexShrink: 1,
+            flexBasis: 0,
+            opacity: chatActive ? 0 : 1,
+            overflow: "hidden",
+            transition: "flex-grow 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
           <GraphCanvas
             onSelect={handleSelectNode}
             onDeselect={() => setSelectedNode(null)}
@@ -859,6 +866,7 @@ export default function UserPage() {
             }
           />
         </div>
+        <ChatPanel userId={userId} onActiveChange={setChatActive} />
       </main>
 
       {/* Right detail panel */}

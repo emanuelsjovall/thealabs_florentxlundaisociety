@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { spawnSync } from "node:child_process"
 import { requireDatabaseUrl } from "./db-env"
@@ -14,10 +14,16 @@ if (!existsSync(inputPath)) {
 
 const databaseUrl = requireDatabaseUrl()
 
+// Strip SET params added by pg_dump >= 17 that older Postgres servers don't recognise
+const sql = readFileSync(inputPath, "utf8")
+  .split("\n")
+  .filter((line) => !/^SET\s+transaction_timeout\b/.test(line))
+  .join("\n")
+
 const result = spawnSync(
   "psql",
-  ["-v", "ON_ERROR_STOP=1", "-f", inputPath, databaseUrl],
-  { stdio: "inherit", env: process.env }
+  ["-v", "ON_ERROR_STOP=1", databaseUrl],
+  { input: sql, stdio: ["pipe", "inherit", "inherit"], env: process.env }
 )
 
 if (result.error) {

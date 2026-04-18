@@ -371,6 +371,9 @@ interface GraphCanvasProps {
   notesPreviewLine: string | null
 }
 
+const WORLD_W = 1400
+const WORLD_H = 900
+
 export function GraphCanvas({
   onSelect,
   onDeselect,
@@ -399,6 +402,7 @@ export function GraphCanvas({
     startY: number
     hasMoved: boolean
   } | null>(null)
+  const hasInteracted = useRef(false)
 
   useEffect(() => {
     const t1 = setTimeout(() => setShowLinkedin(true), 600)
@@ -425,6 +429,32 @@ export function GraphCanvas({
     setShowCompany(false)
   }, [showCompanyNode])
 
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    function fitToCanvas(w: number, h: number) {
+      if (hasInteracted.current) return
+      const scale = Math.min((w * 0.9) / WORLD_W, (h * 0.9) / WORLD_H)
+      setViewport({
+        scale,
+        x: (w - WORLD_W * scale) / 2,
+        y: (h - WORLD_H * scale) / 2,
+      })
+    }
+
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) fitToCanvas(entry.contentRect.width, entry.contentRect.height)
+    })
+    ro.observe(canvas)
+
+    const { width, height } = canvas.getBoundingClientRect()
+    fitToCanvas(width, height)
+
+    return () => ro.disconnect()
+  }, [])
+
   // Block native scroll on the canvas so the page never scrolls while hovering the graph
   useEffect(() => {
     const canvas = canvasRef.current
@@ -436,6 +466,7 @@ export function GraphCanvas({
 
   function onMouseDown(e: React.MouseEvent<HTMLDivElement>) {
     if (e.button !== 0) return
+    hasInteracted.current = true
     dragRef.current = {
       startX: e.clientX - viewport.x,
       startY: e.clientY - viewport.y,
@@ -445,12 +476,13 @@ export function GraphCanvas({
   }
 
   function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!dragRef.current) return
-    dragRef.current.hasMoved = true
+    const drag = dragRef.current
+    if (!drag) return
+    drag.hasMoved = true
     setViewport((prev) => ({
       ...prev,
-      x: e.clientX - dragRef.current!.startX,
-      y: e.clientY - dragRef.current!.startY,
+      x: e.clientX - drag.startX,
+      y: e.clientY - drag.startY,
     }))
   }
 
@@ -481,11 +513,13 @@ export function GraphCanvas({
   }
 
   function zoomIn() {
+    hasInteracted.current = true
     const next = ZOOM_LEVELS.find((l) => l > viewport.scale + 0.01)
     if (next) zoomTo(next)
   }
 
   function zoomOut() {
+    hasInteracted.current = true
     const prev = [...ZOOM_LEVELS]
       .reverse()
       .find((l) => l < viewport.scale - 0.01)
@@ -513,8 +547,12 @@ export function GraphCanvas({
           transition: isDragging
             ? "none"
             : "transform 350ms cubic-bezier(0.4, 0, 0.2, 1)",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: `${WORLD_W}px`,
+          height: `${WORLD_H}px`,
         }}
-        className="absolute inset-0"
       >
         {/* Connecting lines */}
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
@@ -740,7 +778,7 @@ export function GraphCanvas({
 
       {/* Zoom controls */}
       <div
-        className="absolute bottom-5 left-5 flex items-center gap-2"
+        className="absolute top-5 left-5 flex items-center gap-2"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
