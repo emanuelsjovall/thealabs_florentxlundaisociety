@@ -30,6 +30,7 @@ import type {
 } from "@/lib/user-record"
 import type { BreachSearchResult, BreachRecord } from "@/lib/breach"
 import type { PersonalNote } from "@/lib/personal-note"
+import type { TimelineEvent, TimelineCluster } from "@/lib/timeline-types"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -687,6 +688,12 @@ function formatDistance(meters: number): string {
   return `${Math.round(meters)} m`
 }
 
+function parseStravaDatetime(raw: string): Date {
+  // Strava uses +0000 (no colon) which isn't strict ISO — normalize it
+  const normalized = raw.trim().replace(/([+-])(\d{2})(\d{2})$/, "$1$2:$3")
+  return new Date(normalized)
+}
+
 function ActivityCard({
   activity,
   onClick,
@@ -706,7 +713,7 @@ function ActivityCard({
         <p className="truncate text-sm text-foreground">{activity.title}</p>
       </div>
       <div className="mt-2 flex items-center gap-4 text-[10px] text-neutral-700">
-        <span>{new Date(activity.datetime).toLocaleDateString()}</span>
+        <span>{parseStravaDatetime(activity.datetime).toLocaleDateString()}</span>
         {activity.distanceMeters != null && activity.distanceMeters > 0 && (
           <span>{formatDistance(activity.distanceMeters)}</span>
         )}
@@ -748,7 +755,7 @@ function StravaActivityDetailContent({
         )}
         {detail.datetime && (
           <p className="mt-1 text-[11px] text-neutral-700">
-            {new Date(detail.datetime).toLocaleString()}
+            {parseStravaDatetime(detail.datetime).toLocaleString()}
           </p>
         )}
       </div>
@@ -1594,7 +1601,13 @@ interface DetailPanelProps {
     | "breach"
     | "github"
     | "notes"
+    | "timeline-event"
+    | "timeline-cluster"
     | null
+  timelineEvent?: TimelineEvent | null
+  timelineCluster?: TimelineCluster | null
+  highlightedEventId?: string | null
+  onClusterEventHighlight?: (eventId: string | null) => void
   onClose: () => void
   subject: SubjectPanelData
   linkedinState: LinkedInPanelState | null
@@ -1621,6 +1634,10 @@ interface DetailPanelProps {
 
 export function DetailPanel({
   source,
+  timelineEvent,
+  timelineCluster,
+  highlightedEventId,
+  onClusterEventHighlight,
   onClose,
   subject,
   linkedinState,
@@ -1830,6 +1847,10 @@ export function DetailPanel({
         return "BREACH"
       case "notes":
         return "NOTES"
+      case "timeline-event":
+        return "EVENT"
+      case "timeline-cluster":
+        return `CLUSTER — ${timelineCluster?.events.length ?? 0} EVENTS`
       default:
         return ""
     }
@@ -1853,6 +1874,14 @@ export function DetailPanel({
         return "bg-red-600/40"
       case "notes":
         return "bg-amber-600/35"
+      case "timeline-event": {
+        if (!timelineEvent) return "bg-neutral-700/60"
+        if (timelineEvent.kind.startsWith("linkedin")) return "bg-blue-600/40"
+        if (timelineEvent.kind === "strava-activity") return "bg-orange-500/40"
+        return "bg-neutral-700/60"
+      }
+      case "timeline-cluster":
+        return "bg-neutral-700/60"
       default:
         return "bg-neutral-700/60"
     }
@@ -1876,9 +1905,266 @@ export function DetailPanel({
         return "text-red-500"
       case "notes":
         return "text-amber-400"
+      case "timeline-event": {
+        if (!timelineEvent) return "text-neutral-400"
+        if (timelineEvent.kind.startsWith("linkedin")) return "text-blue-500"
+        if (timelineEvent.kind === "strava-activity") return "text-orange-500"
+        return "text-neutral-400"
+      }
+      case "timeline-cluster":
+        return "text-neutral-400"
       default:
         return "text-neutral-400"
     }
+  }
+
+  function formatDuration(seconds: number): string {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
+  }
+
+  function formatDistance(meters: number): string {
+    if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
+    return `${Math.round(meters)} m`
+  }
+
+  function renderTimelineEventContent(): ReactNode {
+    if (!timelineEvent) return null
+
+    function formatDate(d: Date): string {
+      return d.toLocaleDateString("en", { year: "numeric", month: "short", day: "numeric" })
+    }
+
+    function dateRangeLabel(start: Date, end: Date | null): string {
+      return end ? `${formatDate(start)} — ${formatDate(end)}` : `${formatDate(start)} — Present`
+    }
+
+    switch (timelineEvent.kind) {
+      case "linkedin-experience": {
+        const exp = timelineEvent.payload
+        return (
+          <div className="space-y-5">
+            <Section label="Position">
+              <Card>
+                <p className="text-sm font-medium text-neutral-200">{exp.positionTitle ?? "—"}</p>
+                {exp.companyName && (
+                  <p className="mt-0.5 text-xs text-neutral-500">{exp.companyName}</p>
+                )}
+                <p className="mt-1 text-[10px] text-neutral-600">
+                  {dateRangeLabel(timelineEvent.startDate, timelineEvent.endDate)}
+                </p>
+                {exp.duration && (
+                  <p className="text-[10px] text-neutral-600">{exp.duration}</p>
+                )}
+                {exp.location && (
+                  <p className="mt-1 text-[10px] text-neutral-600">{exp.location}</p>
+                )}
+              </Card>
+            </Section>
+            {exp.description && (
+              <Section label="Description">
+                <p className="text-xs text-neutral-400 leading-relaxed whitespace-pre-wrap">{exp.description}</p>
+              </Section>
+            )}
+          </div>
+        )
+      }
+
+      case "linkedin-education": {
+        const edu = timelineEvent.payload
+        return (
+          <div className="space-y-5">
+            <Section label="Education">
+              <Card>
+                <p className="text-sm font-medium text-neutral-200">{edu.institutionName ?? "—"}</p>
+                {edu.degree && (
+                  <p className="mt-0.5 text-xs text-neutral-500">{edu.degree}</p>
+                )}
+                {edu.fieldOfStudy && (
+                  <p className="text-xs text-neutral-500">{edu.fieldOfStudy}</p>
+                )}
+                <p className="mt-1 text-[10px] text-neutral-600">
+                  {dateRangeLabel(timelineEvent.startDate, timelineEvent.endDate)}
+                </p>
+              </Card>
+            </Section>
+            {edu.description && (
+              <Section label="Description">
+                <p className="text-xs text-neutral-400 leading-relaxed whitespace-pre-wrap">{edu.description}</p>
+              </Section>
+            )}
+          </div>
+        )
+      }
+
+      case "linkedin-post": {
+        const post = timelineEvent.payload
+        return (
+          <div className="space-y-5">
+            <Section label="Post">
+              <Card>
+                <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">{post.text ?? "—"}</p>
+                <p className="mt-2 text-[10px] text-neutral-600">{formatDate(timelineEvent.startDate)}</p>
+              </Card>
+            </Section>
+            <Section label="Engagement">
+              <div className="flex gap-5">
+                {post.likes != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{post.likes.toLocaleString()}</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">LIKES</p>
+                  </div>
+                )}
+                {post.comments != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{post.comments.toLocaleString()}</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">COMMENTS</p>
+                  </div>
+                )}
+                {post.reposts != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{post.reposts.toLocaleString()}</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">REPOSTS</p>
+                  </div>
+                )}
+              </div>
+            </Section>
+          </div>
+        )
+      }
+
+      case "strava-activity": {
+        const act = timelineEvent.payload
+        return (
+          <div className="space-y-5">
+            <Section label="Activity">
+              <Card>
+                <p className="text-sm font-medium text-neutral-200">{act.title}</p>
+                <p className="mt-0.5 text-xs text-neutral-500">{act.sportType}</p>
+                <p className="mt-1 text-[10px] text-neutral-600">{formatDate(timelineEvent.startDate)}</p>
+              </Card>
+            </Section>
+            <Section label="Stats">
+              <div className="flex gap-5 flex-wrap">
+                {act.distanceMeters != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{formatDistance(act.distanceMeters)}</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">DISTANCE</p>
+                  </div>
+                )}
+                {act.movingTimeSeconds != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{formatDuration(act.movingTimeSeconds)}</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">MOVING TIME</p>
+                  </div>
+                )}
+                {act.elevationMeters != null && (
+                  <div>
+                    <p className="font-mono text-xs text-neutral-200">{Math.round(act.elevationMeters)} m</p>
+                    <p className="text-[9px] tracking-widest text-neutral-600">ELEVATION</p>
+                  </div>
+                )}
+              </div>
+            </Section>
+            {act.activityUrl && (
+              <a
+                href={act.activityUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View on Strava
+              </a>
+            )}
+          </div>
+        )
+      }
+
+      case "twitter-tweet": {
+        const tweet = timelineEvent.payload
+        return (
+          <div className="space-y-5">
+            <Section label="Tweet">
+              <Card>
+                <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">{tweet.text}</p>
+                <p className="mt-2 text-[10px] text-neutral-600">{formatDate(timelineEvent.startDate)}</p>
+              </Card>
+            </Section>
+            <Section label="Engagement">
+              <div className="flex gap-5 flex-wrap">
+                <div>
+                  <p className="font-mono text-xs text-neutral-200">{tweet.likes.toLocaleString()}</p>
+                  <p className="text-[9px] tracking-widest text-neutral-600">LIKES</p>
+                </div>
+                <div>
+                  <p className="font-mono text-xs text-neutral-200">{tweet.retweets.toLocaleString()}</p>
+                  <p className="text-[9px] tracking-widest text-neutral-600">RETWEETS</p>
+                </div>
+                <div>
+                  <p className="font-mono text-xs text-neutral-200">{tweet.replies.toLocaleString()}</p>
+                  <p className="text-[9px] tracking-widest text-neutral-600">REPLIES</p>
+                </div>
+                <div>
+                  <p className="font-mono text-xs text-neutral-200">{tweet.views.toLocaleString()}</p>
+                  <p className="text-[9px] tracking-widest text-neutral-600">VIEWS</p>
+                </div>
+              </div>
+            </Section>
+          </div>
+        )
+      }
+    }
+  }
+
+  function renderTimelineClusterContent(): ReactNode {
+    if (!timelineCluster) return null
+    const { events } = timelineCluster
+
+    function kindLabel(ev: TimelineEvent): string {
+      switch (ev.kind) {
+        case "linkedin-experience": return "EXPERIENCE"
+        case "linkedin-education": return "EDUCATION"
+        case "linkedin-post": return "POST"
+        case "strava-activity": return ev.payload.sportType.toUpperCase()
+        case "twitter-tweet": return "TWEET"
+      }
+    }
+
+    function kindColor(ev: TimelineEvent): string {
+      if (ev.kind.startsWith("linkedin")) return "text-blue-500"
+      if (ev.kind === "strava-activity") return "text-orange-500"
+      return "text-neutral-500"
+    }
+
+    function fmtDate(d: Date): string {
+      return d.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })
+    }
+
+    return (
+      <div className="space-y-2">
+        {events.map((ev) => (
+          <button
+            key={ev.id}
+            type="button"
+            onClick={() => onClusterEventHighlight?.(ev.id)}
+            className={cn(
+              "w-full rounded-lg border px-3 py-2.5 text-left transition-all",
+              "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700",
+              highlightedEventId === ev.id && "border-blue-600/60 ring-1 ring-blue-600/30"
+            )}
+          >
+            <p className={cn("font-mono text-[9px] tracking-widest mb-1", kindColor(ev))}>
+              {kindLabel(ev)}
+            </p>
+            <p className="text-xs text-neutral-300 truncate">{ev.label}</p>
+            <p className="mt-0.5 font-mono text-[10px] text-neutral-600">{fmtDate(ev.startDate)}</p>
+          </button>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -1933,6 +2219,8 @@ export function DetailPanel({
             onDeleteNote={onDeleteNote}
           />
         )}
+        {source === "timeline-event" && renderTimelineEventContent()}
+        {source === "timeline-cluster" && renderTimelineClusterContent()}
       </div>
     </div>
   )

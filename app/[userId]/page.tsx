@@ -6,8 +6,10 @@ import { useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GraphCanvas } from "@/components/graph-canvas"
+import { TimelineCanvas } from "@/components/timeline-canvas"
 import { DetailPanel } from "@/components/detail-panel"
 import { ChatPanel } from "@/components/chat-panel"
+import type { TimelineEvent, TimelineCluster } from "@/lib/timeline-types"
 import type {
   LinkedInPanelState,
   StravaPanelState,
@@ -67,8 +69,14 @@ export default function UserPage() {
     | "breach"
     | "github"
     | "notes"
+    | "timeline-event"
+    | "timeline-cluster"
     | null
   >(null)
+  const [activeView, setActiveView] = useState<"graph" | "timeline">("graph")
+  const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<TimelineEvent | null>(null)
+  const [selectedCluster, setSelectedCluster] = useState<TimelineCluster | null>(null)
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
   const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(
     null
   )
@@ -755,6 +763,23 @@ export default function UserPage() {
 
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null)
+    setSelectedTimelineEvent(null)
+    setSelectedCluster(null)
+    setHighlightedEventId(null)
+  }, [])
+
+  const handleTimelineEventSelect = useCallback((event: TimelineEvent) => {
+    setSelectedTimelineEvent(event)
+    setSelectedCluster(null)
+    setHighlightedEventId(null)
+    setSelectedNode("timeline-event")
+  }, [])
+
+  const handleClusterSelect = useCallback((cluster: TimelineCluster) => {
+    setSelectedCluster(cluster)
+    setSelectedTimelineEvent(null)
+    setHighlightedEventId(null)
+    setSelectedNode("timeline-cluster")
   }, [])
 
   if (loading) {
@@ -824,6 +849,34 @@ export default function UserPage() {
           height: "100%",
         }}
       >
+        {/* View toggle */}
+        <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2 flex items-center gap-0 rounded-lg border border-neutral-800 bg-background/80 backdrop-blur-sm p-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveView("graph")}
+            className={cn(
+              "rounded-md px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors",
+              activeView === "graph"
+                ? "bg-neutral-800 text-foreground"
+                : "text-neutral-600 hover:text-neutral-400"
+            )}
+          >
+            GRAPH
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView("timeline")}
+            className={cn(
+              "rounded-md px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors",
+              activeView === "timeline"
+                ? "bg-neutral-800 text-foreground"
+                : "text-neutral-600 hover:text-neutral-400"
+            )}
+          >
+            TIMELINE
+          </button>
+        </div>
+
         <div
           className="relative min-h-0"
           style={{
@@ -835,36 +888,53 @@ export default function UserPage() {
             transition: "flex-grow 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          <GraphCanvas
-            onSelect={handleSelectNode}
-            onDeselect={() => setSelectedNode(null)}
-            linkedinProfile={
-              linkedinState?.status === "profile" ? linkedinState.profile : null
-            }
-            twitterProfile={
-              twitterState?.status === "profile" ? twitterState.profile : null
-            }
-            githubProfile={
-              githubState?.status === "profile" ? githubState.profile : null
-            }
-            stravaProfile={
-              stravaState?.status === "profile" ? stravaState.profile : null
-            }
-            krafmanProfile={
-              krafmanState?.status === "profile" ? krafmanState.profile : null
-            }
-            showCompanyNode={activeCompany !== null}
-            breachResult={
-              breachState?.status === "results" ? breachState.data : null
-            }
-            noteCount={notes.length}
-            notesPreviewLine={
-              notes[0]?.content.trim()
-                ? (notes[0].content.trim().split("\n")[0]?.slice(0, 120) ??
-                  null)
-                : null
-            }
-          />
+          {activeView === "graph" ? (
+            <GraphCanvas
+              onSelect={handleSelectNode}
+              onDeselect={() => setSelectedNode(null)}
+              linkedinProfile={
+                linkedinState?.status === "profile" ? linkedinState.profile : null
+              }
+              twitterProfile={
+                twitterState?.status === "profile" ? twitterState.profile : null
+              }
+              githubProfile={
+                githubState?.status === "profile" ? githubState.profile : null
+              }
+              stravaProfile={
+                stravaState?.status === "profile" ? stravaState.profile : null
+              }
+              krafmanProfile={
+                krafmanState?.status === "profile" ? krafmanState.profile : null
+              }
+              showCompanyNode={activeCompany !== null}
+              breachResult={
+                breachState?.status === "results" ? breachState.data : null
+              }
+              noteCount={notes.length}
+              notesPreviewLine={
+                notes[0]?.content.trim()
+                  ? (notes[0].content.trim().split("\n")[0]?.slice(0, 120) ??
+                    null)
+                  : null
+              }
+            />
+          ) : (
+            <TimelineCanvas
+              linkedinProfile={
+                linkedinState?.status === "profile" ? linkedinState.profile : null
+              }
+              stravaProfile={
+                stravaState?.status === "profile" ? stravaState.profile : null
+              }
+              twitterProfile={
+                twitterState?.status === "profile" ? twitterState.profile : null
+              }
+              onEventSelect={handleTimelineEventSelect}
+              onClusterSelect={handleClusterSelect}
+              highlightedEventId={highlightedEventId}
+            />
+          )}
         </div>
         <ChatPanel userId={userId} onActiveChange={setChatActive} />
       </main>
@@ -872,6 +942,10 @@ export default function UserPage() {
       {/* Right detail panel */}
       <DetailPanel
         source={selectedNode}
+        timelineEvent={selectedTimelineEvent}
+        timelineCluster={selectedCluster}
+        highlightedEventId={highlightedEventId}
+        onClusterEventHighlight={setHighlightedEventId}
         onClose={handleClosePanel}
         subject={{
           name: targetName,
