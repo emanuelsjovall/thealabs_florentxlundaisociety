@@ -42,13 +42,13 @@ export interface UserTwitterProfile {
   readonly tweets_count: number
   readonly likes_count: number
   readonly avatar_url: string | null
-  readonly recent_tweets: readonly UserTwitterTweet[]
-  readonly top_topics: readonly string[]
+  readonly recent_tweets: ReadonlyArray<UserTwitterTweet>
+  readonly top_topics: ReadonlyArray<string>
   readonly profile_url: string
-  readonly last_synced_at?: string | null
+  readonly last_synced_at: string | null | undefined
 }
 
-export interface UserRecordData {
+export type UserRecordData = {
   readonly id: string
   readonly name: string
   readonly person: UserPerson | null
@@ -65,7 +65,7 @@ export interface UserRecordData {
   readonly updatedAt: string
 }
 
-export interface UserRecordPatch {
+export type UserRecordPatch = {
   readonly person?: UserPerson | null
   readonly linkedin?: LinkedInProfile | null
   readonly linkedinUrl?: string | null
