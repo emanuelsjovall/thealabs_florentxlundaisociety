@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, type ElementType } from "react"
+import { useState, useCallback, type ElementType } from "react"
 import { Search, ArrowRight, MapPin, Mail, Phone, Globe, ChevronDown, ChevronUp } from "lucide-react"
 import { GraphCanvas } from "@/components/graph-canvas"
 import { DetailPanel } from "@/components/detail-panel"
 import { cn } from "@/lib/utils"
+import type { LinkedInProfile, LinkedInSearchResult } from "@/lib/linkedin"
 import personData from "@/data/mock/person.json"
 
 function ContactRow({ icon: Icon, text }: { icon: ElementType; text: string }) {
@@ -55,6 +56,13 @@ function PersonNode({ name, expanded, onToggle }: PersonNodeProps) {
   )
 }
 
+type LinkedInPanelState =
+  | { status: "searching" }
+  | { status: "search-results"; results: readonly LinkedInSearchResult[] }
+  | { status: "scraping"; name: string }
+  | { status: "profile"; profile: LinkedInProfile }
+  | { status: "error"; message: string }
+
 export default function Page() {
   const [query, setQuery] = useState("")
   const [submitted, setSubmitted] = useState(false)
@@ -62,6 +70,7 @@ export default function Page() {
   const [targetName, setTargetName] = useState("")
   const [selectedNode, setSelectedNode] = useState<"linkedin" | "x" | null>(null)
   const [subjectExpanded, setSubjectExpanded] = useState(false)
+  const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(null)
 
   function handleSearch() {
     const name = query.trim()
@@ -73,6 +82,62 @@ export default function Page() {
       setSubjectExpanded(true)
     }, 480)
   }
+
+  const handleLinkedinSelect = useCallback(async () => {
+    setSelectedNode("linkedin")
+    setLinkedinState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/linkedin/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: targetName }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setLinkedinState({ status: "search-results", results: data.data })
+      } else {
+        setLinkedinState({ status: "error", message: data.error })
+      }
+    } catch {
+      setLinkedinState({ status: "error", message: "Failed to search LinkedIn" })
+    }
+  }, [targetName])
+
+  const handleSelectSearchResult = useCallback(async (result: LinkedInSearchResult) => {
+    setLinkedinState({ status: "scraping", name: result.name })
+
+    try {
+      const res = await fetch("/api/linkedin/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: result.profileUrl }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setLinkedinState({ status: "profile", profile: data.data })
+      } else {
+        setLinkedinState({ status: "error", message: data.error })
+      }
+    } catch {
+      setLinkedinState({ status: "error", message: "Failed to scrape profile" })
+    }
+  }, [])
+
+  const handleSelectNode = useCallback((source: "linkedin" | "x") => {
+    if (source === "linkedin") {
+      handleLinkedinSelect()
+    } else {
+      setSelectedNode(source)
+    }
+  }, [handleLinkedinSelect])
+
+  const handleClosePanel = useCallback(() => {
+    setSelectedNode(null)
+    // Keep linkedin state so re-opening shows previous results
+  }, [])
 
   return (
     <div className="relative h-screen overflow-hidden bg-background">
@@ -172,7 +237,11 @@ export default function Page() {
         {/* Results */}
         {showResults && (
           <div className="animate-in fade-in h-full duration-500">
-            <GraphCanvas onSelect={setSelectedNode} onDeselect={() => setSelectedNode(null)} />
+            <GraphCanvas
+              onSelect={handleSelectNode}
+              onDeselect={() => setSelectedNode(null)}
+              linkedinProfile={linkedinState?.status === "profile" ? linkedinState.profile : null}
+            />
           </div>
         )}
       </main>
@@ -180,7 +249,9 @@ export default function Page() {
       {/* Right detail panel */}
       <DetailPanel
         source={selectedNode}
-        onClose={() => setSelectedNode(null)}
+        onClose={handleClosePanel}
+        linkedinState={linkedinState}
+        onSelectSearchResult={handleSelectSearchResult}
       />
     </div>
   )

@@ -1,9 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import linkedinData from "@/data/mock/linkedin.json"
+import type { LinkedInProfile, LinkedInSearchResult } from "@/lib/linkedin"
 import xData from "@/data/mock/x.json"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
@@ -23,87 +23,163 @@ function Card({ children }: { children: ReactNode }) {
   )
 }
 
-function LinkedinContent() {
-  const d = linkedinData.profile
+function LoadingSpinner({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
+      <p className="text-xs text-neutral-600">{text}</p>
+    </div>
+  )
+}
+
+function SearchResultsList({
+  results,
+  onSelect,
+}: {
+  results: readonly LinkedInSearchResult[]
+  onSelect: (result: LinkedInSearchResult) => void
+}) {
+  if (results.length === 0) {
+    return (
+      <p className="py-12 text-center text-xs text-neutral-600">
+        No matches found
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="mb-4 text-[10px] text-neutral-600">
+        {results.length} potential {results.length === 1 ? "match" : "matches"}
+      </p>
+      {results.map((result, i) => (
+        <button
+          key={i}
+          onClick={() => onSelect(result)}
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+        >
+          {result.profileImageUrl ? (
+            <img
+              src={result.profileImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+              {result.name.charAt(0)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm text-foreground">{result.name}</p>
+              {result.connectionDegree && (
+                <span className="shrink-0 text-[10px] text-neutral-600">
+                  · {result.connectionDegree}
+                </span>
+              )}
+            </div>
+            {result.headline && (
+              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
+                {result.headline}
+              </p>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
+  const currentExp = profile.experiences[0]
 
   return (
     <div className="space-y-8">
       {/* Identity */}
       <div>
-        <h3 className="text-xl font-light text-foreground">{d.name}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">{d.headline}</p>
-        <p className="mt-2.5 text-[11px] text-neutral-600">
-          {d.location} · {d.connections} connections · {d.followers} followers
-        </p>
+        <h3 className="text-xl font-light text-foreground">{profile.name}</h3>
+        {profile.headline && (
+          <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">{profile.headline}</p>
+        )}
+        {profile.location && (
+          <p className="mt-2.5 text-[11px] text-neutral-600">{profile.location}</p>
+        )}
       </div>
 
-      <Section label="About">
-        <p className="text-sm leading-relaxed text-neutral-400">{d.about}</p>
-      </Section>
+      {profile.about && (
+        <Section label="About">
+          <p className="text-sm leading-relaxed text-neutral-400">{profile.about}</p>
+        </Section>
+      )}
 
-      <Section label="Current Position">
-        <Card>
-          <p className="text-sm text-foreground">{d.current_position.title}</p>
-          <p className="mt-1 text-xs text-neutral-500">{d.current_position.company}</p>
-          <p className="mt-0.5 text-[11px] text-neutral-700">
-            {d.current_position.location} · {d.current_position.start_date} – present
-          </p>
-        </Card>
-      </Section>
-
-      <Section label="Experience">
-        <div className="space-y-2">
-          {d.experience.map((exp, i) => (
-            <Card key={i}>
-              <p className="text-sm text-foreground">{exp.title}</p>
-              <p className="mt-1 text-xs text-neutral-500">{exp.company}</p>
-              <p className="mt-0.5 text-[11px] text-neutral-700">{exp.location} · {exp.duration}</p>
-            </Card>
-          ))}
-        </div>
-      </Section>
-
-      <Section label="Education">
-        <div className="space-y-2">
-          {d.education.map((edu, i) => (
-            <Card key={i}>
-              <p className="text-sm text-foreground">{edu.school}</p>
-              <p className="mt-1 text-xs text-neutral-500">{edu.degree}</p>
-              <p className="mt-0.5 text-[11px] text-neutral-700">{edu.years}</p>
-            </Card>
-          ))}
-        </div>
-      </Section>
-
-      <Section label="Skills">
-        <div className="flex flex-wrap gap-1.5">
-          {d.skills.map((skill) => (
-            <span
-              key={skill}
-              className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
-            >
-              {skill}
-            </span>
-          ))}
-        </div>
-      </Section>
-
-      <Section label="Languages">
-        <div className="space-y-1.5">
-          {d.languages.map((lang) => (
-            <p key={lang} className="text-xs text-neutral-500">{lang}</p>
-          ))}
-        </div>
-      </Section>
-
-      <Section label="Certifications">
-        {d.certifications.map((cert, i) => (
-          <Card key={i}>
-            <p className="text-sm text-foreground">{cert.name}</p>
-            <p className="mt-1 text-xs text-neutral-500">{cert.issuer} · {cert.year}</p>
+      {currentExp && (
+        <Section label="Current Position">
+          <Card>
+            <p className="text-sm text-foreground">{currentExp.positionTitle}</p>
+            {currentExp.companyName && (
+              <p className="mt-1 text-xs text-neutral-500">{currentExp.companyName}</p>
+            )}
+            <p className="mt-0.5 text-[11px] text-neutral-700">
+              {[currentExp.location, currentExp.fromDate && `${currentExp.fromDate} – ${currentExp.toDate ?? "present"}`]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
           </Card>
-        ))}
-      </Section>
+        </Section>
+      )}
+
+      {profile.experiences.length > 1 && (
+        <Section label="Experience">
+          <div className="space-y-2">
+            {profile.experiences.slice(1).map((exp, i) => (
+              <Card key={i}>
+                <p className="text-sm text-foreground">{exp.positionTitle}</p>
+                {exp.companyName && (
+                  <p className="mt-1 text-xs text-neutral-500">{exp.companyName}</p>
+                )}
+                <p className="mt-0.5 text-[11px] text-neutral-700">
+                  {[exp.location, exp.duration].filter(Boolean).join(" · ")}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {profile.educations.length > 0 && (
+        <Section label="Education">
+          <div className="space-y-2">
+            {profile.educations.map((edu, i) => (
+              <Card key={i}>
+                <p className="text-sm text-foreground">{edu.institutionName}</p>
+                {(edu.degree || edu.fieldOfStudy) && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
+                  </p>
+                )}
+                <p className="mt-0.5 text-[11px] text-neutral-700">
+                  {[edu.fromDate, edu.toDate].filter(Boolean).join(" – ")}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {profile.skills.length > 0 && (
+        <Section label="Skills">
+          <div className="flex flex-wrap gap-1.5">
+            {profile.skills.map((skill) => (
+              <span
+                key={skill.name}
+                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
+              >
+                {skill.name}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
     </div>
   )
 }
@@ -171,13 +247,62 @@ function XContent() {
   )
 }
 
+type LinkedInPanelState =
+  | { status: "searching" }
+  | { status: "search-results"; results: readonly LinkedInSearchResult[] }
+  | { status: "scraping"; name: string }
+  | { status: "profile"; profile: LinkedInProfile }
+  | { status: "error"; message: string }
+
 interface DetailPanelProps {
   source: "linkedin" | "x" | null
   onClose: () => void
+  linkedinState: LinkedInPanelState | null
+  onSelectSearchResult: (result: LinkedInSearchResult) => void
 }
 
-export function DetailPanel({ source, onClose }: DetailPanelProps) {
+export function DetailPanel({
+  source,
+  onClose,
+  linkedinState,
+  onSelectSearchResult,
+}: DetailPanelProps) {
   const open = source !== null
+
+  function renderLinkedinContent(): ReactNode {
+    if (!linkedinState) return null
+
+    switch (linkedinState.status) {
+      case "searching":
+        return <LoadingSpinner text="Searching LinkedIn..." />
+      case "search-results":
+        return (
+          <SearchResultsList
+            results={linkedinState.results}
+            onSelect={onSelectSearchResult}
+          />
+        )
+      case "scraping":
+        return <LoadingSpinner text={`Scraping ${linkedinState.name}...`} />
+      case "profile":
+        return <LinkedinProfileContent profile={linkedinState.profile} />
+      case "error":
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {linkedinState.message}
+          </p>
+        )
+    }
+  }
+
+  const panelTitle =
+    source === "linkedin"
+      ? linkedinState?.status === "search-results"
+        ? "LINKEDIN — SELECT PROFILE"
+        : "LINKEDIN"
+      : source === "x"
+        ? "X / TWITTER"
+        : ""
 
   return (
     <div
@@ -200,7 +325,7 @@ export function DetailPanel({ source, onClose }: DetailPanelProps) {
           "font-mono text-[9px] tracking-[0.25em]",
           source === "linkedin" ? "text-blue-500" : "text-neutral-400"
         )}>
-          {source === "linkedin" ? "LINKEDIN" : source === "x" ? "X / TWITTER" : ""}
+          {panelTitle}
         </span>
         <button
           onClick={onClose}
@@ -216,7 +341,7 @@ export function DetailPanel({ source, onClose }: DetailPanelProps) {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-6 py-7 scrollbar-none">
-        {source === "linkedin" && <LinkedinContent />}
+        {source === "linkedin" && renderLinkedinContent()}
         {source === "x" && <XContent />}
       </div>
     </div>

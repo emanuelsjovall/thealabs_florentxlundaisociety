@@ -2,11 +2,17 @@
 
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
-import linkedinData from "@/data/mock/linkedin.json"
+import type { LinkedInProfile } from "@/lib/linkedin"
 import xData from "@/data/mock/x.json"
 
-function LinkedinNode({ onSelect }: { onSelect: () => void }) {
-  const d = linkedinData.profile
+function LinkedinNode({
+  onSelect,
+  profile,
+}: {
+  onSelect: () => void
+  profile: LinkedInProfile | null
+}) {
+  const d = profile
 
   return (
     <div
@@ -17,13 +23,25 @@ function LinkedinNode({ onSelect }: { onSelect: () => void }) {
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-blue-500">LINKEDIN</span>
       </div>
-      <p className="text-base font-light text-foreground">{d.name}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">{d.headline}</p>
-      <div className="mt-3 space-y-1.5">
-        <p className="text-xs text-neutral-500">{d.current_position.title} · {d.current_position.company}</p>
-        <p className="text-xs text-neutral-600">{d.location}</p>
-        <p className="text-xs text-neutral-600">{d.connections} connections</p>
-      </div>
+      {d ? (
+        <>
+          <p className="text-base font-light text-foreground">{d.name}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">{d.headline}</p>
+          <div className="mt-3 space-y-1.5">
+            {d.experiences[0] && (
+              <p className="text-xs text-neutral-500">
+                {d.experiences[0].positionTitle} · {d.experiences[0].companyName}
+              </p>
+            )}
+            {d.location && <p className="text-xs text-neutral-600">{d.location}</p>}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to search</p>
+          <p className="mt-1 text-xs text-neutral-700">Find matching profiles</p>
+        </>
+      )}
     </div>
   )
 }
@@ -62,9 +80,10 @@ interface Viewport {
 interface GraphCanvasProps {
   onSelect: (source: "linkedin" | "x") => void
   onDeselect: () => void
+  linkedinProfile: LinkedInProfile | null
 }
 
-export function GraphCanvas({ onSelect, onDeselect }: GraphCanvasProps) {
+export function GraphCanvas({ onSelect, onDeselect, linkedinProfile }: GraphCanvasProps) {
   const [showLinkedin, setShowLinkedin] = useState(false)
   const [showX, setShowX] = useState(false)
   const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 0, y: 0 })
@@ -192,7 +211,10 @@ export function GraphCanvas({ onSelect, onDeselect }: GraphCanvasProps) {
             "transition-all duration-500 ease-out",
             showLinkedin ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
           )}>
-            <LinkedinNode onSelect={() => onSelect("linkedin")} />
+            <LinkedinNode
+              onSelect={() => onSelect("linkedin")}
+              profile={linkedinProfile}
+            />
           </div>
         </div>
 

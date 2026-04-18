@@ -63,3 +63,11 @@ export interface ScrapeLinkedInProfileOptions {
   readonly sessionPath?: string;
   readonly timeout?: number;
 }
+
+export interface LinkedInSearchResult {
+  readonly name: string;
+  readonly headline: string | null;
+  readonly profileUrl: string;
+  readonly connectionDegree: string | null;
+  readonly profileImageUrl: string | null;
+}

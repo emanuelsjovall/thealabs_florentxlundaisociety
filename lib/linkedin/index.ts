@@ -1,9 +1,11 @@
 export { scrapeLinkedInProfile } from "./scrape-linkedin-profile";
+export { searchLinkedInProfiles } from "./search-linkedin-profiles";
 export type {
   LinkedInProfile,
   LinkedInExperience,
   LinkedInEducation,
   LinkedInSkill,
+  LinkedInSearchResult,
   ScrapeLinkedInProfileOptions,
   Result,
   ResultSuccess,
