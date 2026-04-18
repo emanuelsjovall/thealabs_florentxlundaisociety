@@ -248,9 +248,9 @@ function XNode({
         </>
       ) : (
         <>
-          <p className="text-sm text-neutral-500">No saved profile</p>
+          <p className="text-sm text-neutral-500">Click to search</p>
           <p className="mt-1 text-xs text-neutral-700">
-            Load twitter data for this subject
+            Find matching accounts
           </p>
         </>
       )}

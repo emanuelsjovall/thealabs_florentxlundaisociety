@@ -1,30 +1,7 @@
 import { NextResponse } from "next/server"
-import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { buildDefaultPerson, buildDefaultTwitter } from "@/lib/user-record"
-
-const userSelect = {
-  id: true,
-  name: true,
-  person: true,
-  linkedinUrl: true,
-  linkedin: true,
-  strava: true,
-  mrkoll: true,
-  activeCompany: true,
-  krafman: true,
-  twitter: true,
-  updatedAt: true,
-} as const
-
-function toJsonInput(
-  value: unknown | null | undefined
-): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
-  if (value === undefined) return undefined
-  if (value === null) return Prisma.JsonNull
-
-  return value as Prisma.InputJsonValue
-}
+import { buildDefaultPerson } from "@/lib/user-record"
+import { serializeUserRecord, toJsonInput, userSelect } from "@/lib/user-store"
 
 export async function GET(
   _request: Request,
@@ -44,18 +21,17 @@ export async function GET(
     )
   }
 
-  if (!user.person || !user.twitter) {
+  if (!user.person) {
     user = await prisma.user.update({
       where: { id: userId },
       data: {
         person: toJsonInput(user.person ?? buildDefaultPerson(user.name)),
-        twitter: toJsonInput(user.twitter ?? buildDefaultTwitter(user.name)),
       },
       select: userSelect,
     })
   }
 
-  return NextResponse.json({ ok: true, data: user })
+  return NextResponse.json({ ok: true, data: serializeUserRecord(user) })
 }
 
 export async function PATCH(
@@ -72,6 +48,7 @@ export async function PATCH(
     activeCompany?: unknown | null
     krafman?: unknown | null
     twitter?: unknown | null
+    twitterUsername?: string | null
   }
 
   const user = await prisma.user.update({
@@ -88,10 +65,14 @@ export async function PATCH(
       activeCompany: toJsonInput(body.activeCompany),
       krafman: toJsonInput(body.krafman),
       twitter: toJsonInput(body.twitter),
+      twitterUsername:
+        body.twitterUsername === undefined
+          ? undefined
+          : body.twitterUsername?.trim().replace(/^@+/, "") || null,
       updatedAt: new Date(),
     },
     select: userSelect,
   })
 
-  return NextResponse.json({ ok: true, data: user })
+  return NextResponse.json({ ok: true, data: serializeUserRecord(user) })
 }

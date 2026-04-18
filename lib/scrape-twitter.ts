@@ -47,7 +47,7 @@ interface ScrapeResult {
  * Twitter blocks automated login from servers, so we use cookies instead.
  * Extract `auth_token` and `ct0` from your browser after logging in to x.com.
  */
-async function createAuthenticatedScraper(): Promise<Scraper> {
+export async function createAuthenticatedScraper(): Promise<Scraper> {
   const authToken = process.env.TWITTER_AUTH_TOKEN
   const ct0 = process.env.TWITTER_CT0
 

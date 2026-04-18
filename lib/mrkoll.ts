@@ -1,5 +1,3 @@
-import { chromium } from "playwright-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import type { BrowserContext, Page } from "playwright";
 
 import type {
@@ -9,8 +7,7 @@ import type {
   MrkollProfile,
   MrkollScrapeOptions,
 } from "@/lib/mrkoll.types";
-
-chromium.use(StealthPlugin());
+import { chromium, ensureStealthPlugin } from "@/lib/playwright-stealth";
 
 const MRKOLL_BASE_URL = "https://mrkoll.se";
 const BROWSER_DATA_DIR = "/tmp/mrkoll-browser-data";
@@ -26,6 +23,8 @@ async function launchBrowser(
   const headless = options?.headless ?? false;
 
   try {
+    await ensureStealthPlugin();
+
     const context = await chromium.launchPersistentContext(BROWSER_DATA_DIR, {
       headless,
       channel: "chrome",

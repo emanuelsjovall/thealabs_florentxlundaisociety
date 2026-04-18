@@ -19,6 +19,7 @@ import type {
   StravaPanelState,
   MrkollPanelState,
   KrafmanPanelState,
+  TwitterPanelState,
 } from "@/components/detail-panel"
 import { cn } from "@/lib/utils"
 import type { LinkedInSearchResult } from "@/lib/linkedin"
@@ -27,13 +28,14 @@ import type {
   MrkollSearchResult,
   MrkollCompanyEngagement,
 } from "@/lib/mrkoll.types"
+import type { TwitterSearchResult } from "@/lib/twitter-api"
+import { normalizeTwitterUsername } from "@/lib/twitter-api"
 import {
   buildDefaultPerson,
-  buildDefaultTwitter,
+  extractTwitterUsername,
   type UserPerson,
   type UserRecordData,
   type UserRecordPatch,
-  type UserTwitterProfile,
 } from "@/lib/user-record"
 
 function ContactRow({
@@ -130,8 +132,9 @@ export default function UserPage() {
   const [activeCompany, setActiveCompany] =
     useState<MrkollCompanyEngagement | null>(null)
   const [person, setPerson] = useState<UserPerson | null>(null)
-  const [twitterProfile, setTwitterProfile] =
-    useState<UserTwitterProfile | null>(null)
+  const [twitterState, setTwitterState] = useState<TwitterPanelState | null>(
+    null
+  )
   const [subjectUpdatedAt, setSubjectUpdatedAt] = useState<string | null>(null)
 
   const saveUserRecord = useCallback(
@@ -167,9 +170,12 @@ export default function UserPage() {
         if (data.ok && data.data) {
           setTargetName(data.data.name)
           setPerson(data.data.person ?? buildDefaultPerson(data.data.name))
-          setTwitterProfile(
-            data.data.twitter ?? buildDefaultTwitter(data.data.name)
-          )
+          if (data.data.twitter) {
+            setTwitterState({
+              status: "profile",
+              profile: data.data.twitter,
+            })
+          }
           setSubjectUpdatedAt(data.data.updatedAt ?? null)
           if (data.data.linkedin) {
             setLinkedinState({ status: "profile", profile: data.data.linkedin })
@@ -191,6 +197,101 @@ export default function UserPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [userId])
+
+  const syncTwitterProfile = useCallback(
+    async (username: string, force: boolean = false) => {
+      const u = normalizeTwitterUsername(username)
+      if (!u) {
+        setTwitterState({
+          status: "error",
+          message: "Enter a valid X username.",
+        })
+        return
+      }
+
+      setSelectedNode("x")
+      setTwitterState({ status: "syncing", username: u })
+
+      try {
+        const response = await fetch("/api/twitter/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            username: u,
+            force,
+          }),
+        })
+        const data = (await response.json()) as {
+          ok: boolean
+          data?: UserRecordData
+          error?: string
+        }
+
+        if (data.ok && data.data?.twitter) {
+          setTwitterState({
+            status: "profile",
+            profile: data.data.twitter,
+          })
+          setSubjectUpdatedAt(data.data.updatedAt ?? null)
+        } else {
+          setTwitterState({
+            status: "error",
+            message: data.error ?? "Failed to load X profile",
+          })
+        }
+      } catch {
+        setTwitterState({
+          status: "error",
+          message: "Failed to load X profile",
+        })
+      }
+    },
+    [userId]
+  )
+
+  const handleRetryTwitterSearch = useCallback(async (searchQuery: string) => {
+    setTwitterState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/twitter/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: searchQuery }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setTwitterState({
+          status: "search-results",
+          results: data.data,
+          query: searchQuery,
+        })
+      } else {
+        setTwitterState({ status: "error", message: data.error })
+      }
+    } catch {
+      setTwitterState({
+        status: "error",
+        message: "Failed to search X",
+      })
+    }
+  }, [])
+
+  const handleSelectTwitterResult = useCallback(
+    async (result: TwitterSearchResult) => {
+      await syncTwitterProfile(result.screenName, false)
+    },
+    [syncTwitterProfile]
+  )
+
+  const handleRefreshTwitter = useCallback(() => {
+    if (twitterState?.status !== "profile") {
+      return
+    }
+    const u = extractTwitterUsername(twitterState.profile, null)
+    void syncTwitterProfile(u, true)
+  }, [syncTwitterProfile, twitterState])
 
   /* ─── LinkedIn ─── */
 
@@ -525,12 +626,48 @@ export default function UserPage() {
     setSelectedNode("subject")
   }, [])
 
+  const handleTwitterSelect = useCallback(async () => {
+    if (twitterState?.status === "profile") {
+      setSelectedNode("x")
+      return
+    }
+
+    setSelectedNode("x")
+    setTwitterState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/twitter/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: targetName }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setTwitterState({
+          status: "search-results",
+          results: data.data,
+          query: targetName,
+        })
+      } else {
+        setTwitterState({ status: "error", message: data.error })
+      }
+    } catch {
+      setTwitterState({
+        status: "error",
+        message: "Failed to search X",
+      })
+    }
+  }, [twitterState, targetName])
+
   /* ─── Node Selection ─── */
 
   const handleSelectNode = useCallback(
     (source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => {
       if (source === "linkedin") {
         handleLinkedinSelect()
+      } else if (source === "x") {
+        handleTwitterSelect()
       } else if (source === "strava") {
         handleStravaSelect()
       } else if (source === "mrkoll") {
@@ -539,7 +676,12 @@ export default function UserPage() {
         setSelectedNode(source)
       }
     },
-    [handleLinkedinSelect, handleStravaSelect, handleMrkollSelect]
+    [
+      handleLinkedinSelect,
+      handleMrkollSelect,
+      handleStravaSelect,
+      handleTwitterSelect,
+    ]
   )
 
   const handleClosePanel = useCallback(() => {
@@ -625,7 +767,9 @@ export default function UserPage() {
             linkedinProfile={
               linkedinState?.status === "profile" ? linkedinState.profile : null
             }
-            twitterProfile={twitterProfile}
+            twitterProfile={
+              twitterState?.status === "profile" ? twitterState.profile : null
+            }
             stravaProfile={
               stravaState?.status === "profile" ? stravaState.profile : null
             }
@@ -671,7 +815,10 @@ export default function UserPage() {
         onRetryMrkollSearch={handleRetryMrkollSearch}
         onOpenCompany={handleOpenCompany}
         krafmanState={krafmanState}
-        twitterProfile={twitterProfile}
+        twitterState={twitterState}
+        onSelectTwitterResult={handleSelectTwitterResult}
+        onRetryTwitterSearch={handleRetryTwitterSearch}
+        onRefreshTwitter={handleRefreshTwitter}
       />
     </div>
   )

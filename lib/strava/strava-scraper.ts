@@ -68,6 +68,22 @@ function toActivity(raw: RawActivity): StravaActivity {
   };
 }
 
+function normalizeAssetUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return new URL(trimmed, BASE_URL).toString();
+  }
+
+  return trimmed;
+}
+
 export class StravaScraper {
   private readonly cookie: string;
 
@@ -264,9 +280,14 @@ export class StravaScraper {
           .trim()
           .replace(/Add a description/i, "") || null;
 
-      // Map URL from activity list data (static map)
-      const mapImg = $("img.activity-map, [class*=map] img").first();
-      const mapUrl = mapImg.attr("src") ?? null;
+      const mapUrl = normalizeAssetUrl(
+        [
+          $('meta[property="og:image"]').attr("content"),
+          $('meta[name="twitter:image"]').attr("content"),
+          $("img.activity-map").first().attr("src"),
+          $('[class*="map"] img').first().attr("src"),
+        ].find((candidate) => candidate?.trim())
+      );
 
       return {
         ok: true,
@@ -312,7 +333,6 @@ export class StravaScraper {
     let page = 1;
     let total = 0;
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const data = await this.fetchJson<TrainingActivitiesResponse>(
         `/athlete/training_activities?athlete_id=${athleteId}&per_page=${perPage}&page=${page}`

@@ -16,6 +16,7 @@ import type {
   MrkollCompanyEngagement,
 } from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
+import type { TwitterSearchResult } from "@/lib/twitter-api"
 import type { UserTwitterProfile } from "@/lib/user-record"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
@@ -151,6 +152,71 @@ function LinkedInSearchResultsList({
                 {result.headline}
               </p>
             )}
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ─── X Search Results ─── */
+
+function TwitterSearchResultsList({
+  results,
+  searchQuery,
+  onSelect,
+  onRetry,
+}: {
+  results: readonly TwitterSearchResult[]
+  searchQuery: string
+  onSelect: (result: TwitterSearchResult) => void
+  onRetry: (query: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <SearchBar
+        initialQuery={searchQuery}
+        placeholder="Search X accounts..."
+        onSearch={onRetry}
+      />
+      {results.length === 0 ? (
+        <p className="py-12 text-center text-xs text-neutral-600">
+          No accounts found
+        </p>
+      ) : (
+        <p className="mb-4 text-[10px] text-neutral-600">
+          {results.length} potential{" "}
+          {results.length === 1 ? "match" : "matches"}
+        </p>
+      )}
+      {results.map((result) => (
+        <button
+          key={result.screenName}
+          type="button"
+          onClick={() => onSelect(result)}
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+        >
+          {result.profileImageUrl ? (
+            <img
+              src={result.profileImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+              {result.name.charAt(0)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm text-foreground">{result.name}</p>
+            <p className="mt-0.5 font-mono text-[11px] text-neutral-500">
+              @{result.screenName}
+            </p>
+            {result.description ? (
+              <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
+                {result.description}
+              </p>
+            ) : null}
           </div>
         </button>
       ))}
@@ -532,6 +598,18 @@ function StravaActivityDetailContent({
         )}
       </div>
 
+      {detail.mapUrl && (
+        <Section label="Route">
+          <div className="overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
+            <img
+              src={detail.mapUrl}
+              alt={`${detail.title} route map`}
+              className="aspect-[1.35] w-full object-cover"
+            />
+          </div>
+        </Section>
+      )}
+
       <Section label="Stats">
         <div className="grid grid-cols-2 gap-2">
           {detail.distanceMeters != null && detail.distanceMeters > 0 && (
@@ -653,6 +731,7 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
   async function handleActivityClick(activityId: string): Promise<void> {
     setDetailState({ status: "loading", activityId })
     try {
+      const activity = profile.activities.find((item) => item.id === activityId)
       const res = await fetch("/api/strava/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -660,7 +739,13 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
       })
       const data = await res.json()
       if (data.ok) {
-        setDetailState({ status: "loaded", detail: data.data })
+        setDetailState({
+          status: "loaded",
+          detail: {
+            ...data.data,
+            mapUrl: data.data.mapUrl ?? activity?.mapUrl ?? null,
+          },
+        })
       } else {
         setDetailState({ status: "error", message: data.error })
       }
@@ -1131,34 +1216,61 @@ function KrafmanProfileContent({
 
 /* ─── X/Twitter Content ─── */
 
-function XContent({ profile }: { profile: UserTwitterProfile | null }) {
+function TwitterProfileContent({
+  profile,
+  onRefresh,
+}: {
+  profile: UserTwitterProfile
+  onRefresh: () => void
+}) {
   const d = profile
 
-  if (!d) {
-    return (
-      <div className="py-16 text-center">
-        <p className="text-sm text-neutral-400">No saved profile</p>
-        <p className="mt-2 text-xs text-neutral-600">
-          Twitter data has not been stored for this user yet.
-        </p>
-      </div>
-    )
-  }
+  const meta = [
+    d.location,
+    d.website,
+    d.joined
+      ? `joined ${new Date(d.joined).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        })}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
     <div className="space-y-8">
-      <div>
-        <h3 className="text-xl font-light text-foreground">{d.handle}</h3>
-        <p className="mt-1 text-sm text-neutral-400">{d.name}</p>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-500">{d.bio}</p>
-        <p className="mt-2.5 text-[11px] text-neutral-600">
-          {d.location} · {d.website} · joined{" "}
-          {new Date(d.joined).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-light text-foreground">{d.handle}</h3>
+          <p className="mt-1 text-sm text-neutral-400">{d.name}</p>
+          <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+            {d.bio}
+          </p>
+          {meta && <p className="mt-2.5 text-[11px] text-neutral-600">{meta}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="rounded-lg border border-neutral-700 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-foreground"
+        >
+          REFRESH
+        </button>
       </div>
+
+      {d.last_synced_at && (
+        <Section label="Cache">
+          <p className="text-sm text-neutral-500">
+            Synced{" "}
+            {new Date(d.last_synced_at).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </p>
+        </Section>
+      )}
 
       <Section label="Activity">
         <div className="grid grid-cols-2 gap-2">
@@ -1176,35 +1288,43 @@ function XContent({ profile }: { profile: UserTwitterProfile | null }) {
         </div>
       </Section>
 
-      <Section label="Top Topics">
-        <div className="flex flex-wrap gap-1.5">
-          {d.top_topics.map((topic) => (
-            <span
-              key={topic}
-              className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
-            >
-              {topic}
-            </span>
-          ))}
-        </div>
-      </Section>
+      {d.top_topics.length > 0 && (
+        <Section label="Top Topics">
+          <div className="flex flex-wrap gap-1.5">
+            {d.top_topics.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section label="Recent Tweets">
-        <div className="space-y-2">
-          {d.recent_tweets.map((tweet) => (
-            <Card key={tweet.id}>
-              <p className="text-sm leading-relaxed text-neutral-300">
-                {tweet.text}
-              </p>
-              <div className="mt-2.5 flex items-center gap-4 text-[10px] text-neutral-700">
-                <span>{tweet.likes.toLocaleString()} likes</span>
-                <span>{tweet.retweets.toLocaleString()} RT</span>
-                <span>{tweet.replies.toLocaleString()} replies</span>
-                <span>{(tweet.views / 1000).toFixed(0)}k views</span>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {d.recent_tweets.length === 0 ? (
+          <p className="text-sm text-neutral-600">No cached tweets yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {d.recent_tweets.map((tweet) => (
+              <Card key={tweet.id}>
+                <p className="text-sm leading-relaxed text-neutral-300">
+                  {tweet.text}
+                </p>
+                <div className="mt-2.5 flex flex-wrap items-center gap-4 text-[10px] text-neutral-700">
+                  <span>{tweet.likes.toLocaleString()} likes</span>
+                  <span>{tweet.retweets.toLocaleString()} RT</span>
+                  <span>{tweet.replies.toLocaleString()} replies</span>
+                  {tweet.views > 0 && (
+                    <span>{tweet.views.toLocaleString()} views</span>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </Section>
     </div>
   )
@@ -1245,6 +1365,17 @@ export type MrkollPanelState =
   | { status: "profile"; profile: MrkollProfile }
   | { status: "error"; message: string }
 
+export type TwitterPanelState =
+  | { status: "searching" }
+  | {
+      status: "search-results"
+      results: readonly TwitterSearchResult[]
+      query: string
+    }
+  | { status: "syncing"; username: string }
+  | { status: "profile"; profile: UserTwitterProfile }
+  | { status: "error"; message: string }
+
 export type KrafmanPanelState =
   | { status: "scraping"; companyName: string }
   | { status: "profile"; profile: KrafmanCompanyProfile }
@@ -1267,7 +1398,10 @@ interface DetailPanelProps {
   onRetryMrkollSearch: (query: string) => void
   onOpenCompany: (company: MrkollCompanyEngagement) => void
   krafmanState: KrafmanPanelState | null
-  twitterProfile: UserTwitterProfile | null
+  twitterState: TwitterPanelState | null
+  onSelectTwitterResult: (result: TwitterSearchResult) => void
+  onRetryTwitterSearch: (query: string) => void
+  onRefreshTwitter: () => void
 }
 
 export function DetailPanel({
@@ -1285,7 +1419,10 @@ export function DetailPanel({
   onRetryMrkollSearch,
   onOpenCompany,
   krafmanState,
-  twitterProfile,
+  twitterState,
+  onSelectTwitterResult,
+  onRetryTwitterSearch,
+  onRefreshTwitter,
 }: DetailPanelProps) {
   const open = source !== null
 
@@ -1375,6 +1512,42 @@ export function DetailPanel({
     }
   }
 
+  function renderTwitterContent(): ReactNode {
+    if (!twitterState) return null
+    switch (twitterState.status) {
+      case "searching":
+        return <LoadingSpinner text="Searching X..." />
+      case "search-results":
+        return (
+          <TwitterSearchResultsList
+            results={twitterState.results}
+            searchQuery={twitterState.query}
+            onSelect={onSelectTwitterResult}
+            onRetry={onRetryTwitterSearch}
+          />
+        )
+      case "syncing":
+        return (
+          <LoadingSpinner
+            text={`Loading @${twitterState.username}...`}
+          />
+        )
+      case "profile":
+        return (
+          <TwitterProfileContent
+            profile={twitterState.profile}
+            onRefresh={onRefreshTwitter}
+          />
+        )
+      case "error":
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {twitterState.message}
+          </p>
+        )
+    }
+  }
+
   function renderKrafmanContent(): ReactNode {
     if (!krafmanState) return null
     switch (krafmanState.status) {
@@ -1406,7 +1579,9 @@ export function DetailPanel({
           ? "STRAVA — SELECT ATHLETE"
           : "STRAVA"
       case "x":
-        return "X / TWITTER"
+        return twitterState?.status === "search-results"
+          ? "X / TWITTER — SELECT ACCOUNT"
+          : "X / TWITTER"
       case "mrkoll":
         return mrkollState?.status === "search-results"
           ? "MRKOLL — SELECT PERSON"
@@ -1430,6 +1605,8 @@ export function DetailPanel({
         return "bg-purple-600/40"
       case "company":
         return "bg-emerald-600/40"
+      case "x":
+        return "bg-sky-600/30"
       default:
         return "bg-neutral-700/60"
     }
@@ -1447,6 +1624,8 @@ export function DetailPanel({
         return "text-purple-500"
       case "company":
         return "text-emerald-500"
+      case "x":
+        return "text-sky-400"
       default:
         return "text-neutral-400"
     }
@@ -1492,7 +1671,7 @@ export function DetailPanel({
         {source === "subject" && <SubjectContent subject={subject} />}
         {source === "linkedin" && renderLinkedinContent()}
         {source === "strava" && renderStravaContent()}
-        {source === "x" && <XContent profile={twitterProfile} />}
+        {source === "x" && renderTwitterContent()}
         {source === "mrkoll" && renderMrkollContent()}
         {source === "company" && renderKrafmanContent()}
       </div>
