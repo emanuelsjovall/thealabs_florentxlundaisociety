@@ -2,6 +2,7 @@ import type { LinkedInProfile } from "@/lib/linkedin"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { MrkollCompanyEngagement, MrkollProfile } from "@/lib/mrkoll.types"
 import type { StravaProfile } from "@/lib/strava"
+import type { BreachSearchResult } from "@/lib/breach"
 import personData from "@/data/mock/person.json"
 import xData from "@/data/mock/x.json"
 
@@ -57,6 +58,7 @@ export interface UserRecordData {
   readonly activeCompany: MrkollCompanyEngagement | null
   readonly krafman: KrafmanCompanyProfile | null
   readonly twitter: UserTwitterProfile | null
+  readonly breach: BreachSearchResult | null
   readonly updatedAt: string
 }
 
@@ -69,6 +71,7 @@ export interface UserRecordPatch {
   readonly activeCompany?: MrkollCompanyEngagement | null
   readonly krafman?: KrafmanCompanyProfile | null
   readonly twitter?: UserTwitterProfile | null
+  readonly breach?: BreachSearchResult | null
 }
 
 export function buildDefaultPerson(name: string): UserPerson {

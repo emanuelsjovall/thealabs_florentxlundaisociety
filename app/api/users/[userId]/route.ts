@@ -14,6 +14,7 @@ const userSelect = {
   activeCompany: true,
   krafman: true,
   twitter: true,
+  breach: true,
   updatedAt: true,
 } as const
 
@@ -72,6 +73,7 @@ export async function PATCH(
     activeCompany?: unknown | null
     krafman?: unknown | null
     twitter?: unknown | null
+    breach?: unknown | null
   }
 
   const user = await prisma.user.update({
@@ -88,6 +90,7 @@ export async function PATCH(
       activeCompany: toJsonInput(body.activeCompany),
       krafman: toJsonInput(body.krafman),
       twitter: toJsonInput(body.twitter),
+      breach: toJsonInput(body.breach),
       updatedAt: new Date(),
     },
     select: userSelect,

@@ -7,6 +7,7 @@ import type { StravaProfile } from "@/lib/strava"
 import type { MrkollProfile } from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { UserTwitterProfile } from "@/lib/user-record"
+import type { BreachSearchResult } from "@/lib/breach"
 
 function LinkedinNode({
   onSelect,
@@ -209,6 +210,45 @@ function CompanyNode({
   )
 }
 
+function BreachNode({
+  onSelect,
+  result,
+}: {
+  onSelect: () => void
+  result: BreachSearchResult | null
+}) {
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-red-500">
+          BREACH
+        </span>
+      </div>
+      {result ? (
+        <>
+          <p className="text-base font-light text-foreground">
+            {result.count} record{result.count !== 1 ? "s" : ""}
+          </p>
+          <p className="mt-1 text-xs text-neutral-600">
+            searched for &ldquo;{result.term}&rdquo;
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to search</p>
+          <p className="mt-1 text-xs text-neutral-700">
+            Check data breach records
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 function XNode({
   onSelect,
   profile,
@@ -265,7 +305,7 @@ interface Viewport {
 }
 
 interface GraphCanvasProps {
-  onSelect: (source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => void
+  onSelect: (source: "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach") => void
   onDeselect: () => void
   linkedinProfile: LinkedInProfile | null
   twitterProfile: UserTwitterProfile | null
@@ -273,6 +313,7 @@ interface GraphCanvasProps {
   mrkollProfile: MrkollProfile | null
   krafmanProfile: KrafmanCompanyProfile | null
   showCompanyNode: boolean
+  breachResult: BreachSearchResult | null
 }
 
 export function GraphCanvas({
@@ -284,12 +325,14 @@ export function GraphCanvas({
   mrkollProfile,
   krafmanProfile,
   showCompanyNode,
+  breachResult,
 }: GraphCanvasProps) {
   const [showLinkedin, setShowLinkedin] = useState(false)
   const [showX, setShowX] = useState(false)
   const [showStrava, setShowStrava] = useState(false)
   const [showMrkoll, setShowMrkoll] = useState(false)
   const [showCompany, setShowCompany] = useState(false)
+  const [showBreach, setShowBreach] = useState(false)
   const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -304,11 +347,13 @@ export function GraphCanvas({
     const t2 = setTimeout(() => setShowX(true), 2400)
     const t3 = setTimeout(() => setShowStrava(true), 1500)
     const t4 = setTimeout(() => setShowMrkoll(true), 1000)
+    const t5 = setTimeout(() => setShowBreach(true), 1800)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
       clearTimeout(t4)
+      clearTimeout(t5)
     }
   }, [])
 
@@ -465,6 +510,19 @@ export function GraphCanvas({
               showMrkoll ? "opacity-100" : "opacity-0"
             )}
           />
+          <line
+            x1="50%"
+            y1="50%"
+            x2="50%"
+            y2="18%"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            className={cn(
+              "transition-opacity duration-700",
+              showBreach ? "opacity-100" : "opacity-0"
+            )}
+          />
           {showCompanyNode && (
             <line
               x1="30%"
@@ -548,6 +606,23 @@ export function GraphCanvas({
             <MrkollNode
               onSelect={() => onSelect("mrkoll")}
               profile={mrkollProfile}
+            />
+          </div>
+        </div>
+
+        {/* Breach node */}
+        <div className="absolute top-[18%] left-[50%] -translate-x-1/2 -translate-y-1/2">
+          <div
+            className={cn(
+              "transition-all duration-500 ease-out",
+              showBreach
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-3 opacity-0"
+            )}
+          >
+            <BreachNode
+              onSelect={() => onSelect("breach")}
+              result={breachResult}
             />
           </div>
         </div>

@@ -19,6 +19,7 @@ model User {
   activeCompany  Json?    @map("active_company")
   krafman        Json?
   twitter        Json?
+  breach         Json?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
