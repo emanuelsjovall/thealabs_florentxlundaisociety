@@ -32,8 +32,7 @@ function LinkedinNode({
       </div>
       {d ? (
         <>
-          <p className="text-base font-light text-foreground">{d.name}</p>
-          <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">
+          <p className="line-clamp-2 text-sm leading-snug text-foreground">
             {d.headline}
           </p>
           <div className="mt-3 space-y-1.5">
@@ -82,11 +81,22 @@ function StravaNode({
       </div>
       {d ? (
         <>
-          <p className="text-base font-light text-foreground">{d.name}</p>
-          <div className="mt-3 space-y-1.5">
-            <p className="text-xs text-neutral-500">
-              {d.totalActivities} activities
-            </p>
+          <p className="text-base font-light text-foreground">
+            {d.totalActivities} activities
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+            {Object.entries(
+              d.activities.reduce<Record<string, number>>((acc, a) => {
+                acc[a.sportType] = (acc[a.sportType] ?? 0) + 1
+                return acc
+              }, {})
+            )
+              .sort(([, a], [, b]) => b - a)
+              .map(([type, count]) => (
+                <span key={type} className="text-xs text-neutral-600">
+                  {type} ({count})
+                </span>
+              ))}
           </div>
         </>
       ) : (
@@ -267,20 +277,13 @@ function XNode({
       </div>
       {d ? (
         <>
-          <p className="text-base font-light text-foreground">{d.handle}</p>
-          <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">
-            {d.bio}
+          <p className="text-base font-light text-foreground">
+            {d.followers.toLocaleString()} followers ·{" "}
+            {d.following.toLocaleString()} following
           </p>
-          <div className="mt-3 space-y-1.5">
-            <p className="text-xs text-neutral-500">
-              {d.followers.toLocaleString()} followers ·{" "}
-              {d.following.toLocaleString()} following
-            </p>
-            <p className="text-xs text-neutral-600">
-              {d.tweets_count.toLocaleString()} tweets
-            </p>
-            <p className="text-xs text-neutral-600">{d.location}</p>
-          </div>
+          <p className="mt-2 text-xs text-neutral-600">
+            {d.tweets_count.toLocaleString()} tweets
+          </p>
         </>
       ) : (
         <>
@@ -316,21 +319,13 @@ function GithubNode({
       </div>
       {d ? (
         <>
-          <p className="font-mono text-base font-light text-foreground">
-            {d.login}
+          <p className="text-base font-light text-foreground">
+            {d.public_repos.toLocaleString()} public repos ·{" "}
+            {d.followers.toLocaleString()} followers
           </p>
-          <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-500">
-            {d.bio ?? d.name ?? ""}
-          </p>
-          <div className="mt-3 space-y-1.5">
-            <p className="text-xs text-neutral-500">
-              {d.public_repos.toLocaleString()} public repos ·{" "}
-              {d.followers.toLocaleString()} followers
-            </p>
-            {d.location ? (
-              <p className="text-xs text-neutral-600">{d.location}</p>
-            ) : null}
-          </div>
+          {d.location ? (
+            <p className="mt-2 text-xs text-neutral-600">{d.location}</p>
+          ) : null}
         </>
       ) : (
         <>
