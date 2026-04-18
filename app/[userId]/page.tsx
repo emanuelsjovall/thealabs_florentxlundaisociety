@@ -1035,8 +1035,6 @@ export default function UserPage() {
       <main
         style={{
           marginLeft: "288px",
-          marginRight: selectedNode ? "420px" : "0px",
-          transition: "margin 500ms cubic-bezier(0.4, 0, 0.2, 1)",
           height: "100%",
         }}
       >
