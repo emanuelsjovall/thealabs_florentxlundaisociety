@@ -867,7 +867,7 @@ export default function UserPage() {
         }}
       >
         {/* View toggle */}
-        <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2 flex items-center gap-0 rounded-lg border border-neutral-800 bg-background/80 backdrop-blur-sm p-0.5">
+        {/* <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2 flex items-center gap-0 rounded-lg border border-neutral-800 bg-background/80 backdrop-blur-sm p-0.5">
           <button
             type="button"
             onClick={() => setActiveView("graph")}
@@ -892,7 +892,7 @@ export default function UserPage() {
           >
             TIMELINE
           </button>
-        </div>
+        </div> */}
 
         <div
           className="relative min-h-0"
