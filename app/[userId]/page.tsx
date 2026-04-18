@@ -782,10 +782,15 @@ export default function UserPage() {
 
   const handleTimelineEventSelect = useCallback((event: TimelineEvent) => {
     setSelectedTimelineEvent(event)
-    setSelectedCluster(null)
+    // preserve selectedCluster so back button can return to it
     setHighlightedEventId(null)
     setSelectedNode("timeline-event")
   }, [])
+
+  const handleTimelineEventBack = useCallback(() => {
+    setSelectedTimelineEvent(null)
+    setSelectedNode(selectedCluster ? "timeline-cluster" : null)
+  }, [selectedCluster])
 
   const handleClusterSelect = useCallback((cluster: TimelineCluster) => {
     setSelectedCluster(cluster)
@@ -951,9 +956,11 @@ export default function UserPage() {
       <DetailPanel
         source={selectedNode}
         timelineEvent={selectedTimelineEvent}
+        onTimelineEventBack={handleTimelineEventBack}
         timelineCluster={selectedCluster}
         highlightedEventId={highlightedEventId}
         onClusterEventHighlight={setHighlightedEventId}
+        onClusterEventSelect={handleTimelineEventSelect}
         onClose={handleClosePanel}
         subject={{
           name: targetName,

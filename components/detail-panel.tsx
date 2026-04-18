@@ -1621,6 +1621,8 @@ interface DetailPanelProps {
   timelineCluster?: TimelineCluster | null
   highlightedEventId?: string | null
   onClusterEventHighlight?: (eventId: string | null) => void
+  onClusterEventSelect?: (event: TimelineEvent) => void
+  onTimelineEventBack?: () => void
   onClose: () => void
   subject: SubjectPanelData
   linkedinState: LinkedInPanelState | null
@@ -1651,6 +1653,8 @@ export function DetailPanel({
   timelineCluster,
   highlightedEventId,
   onClusterEventHighlight,
+  onClusterEventSelect,
+  onTimelineEventBack,
   onClose,
   subject,
   linkedinState,
@@ -2073,7 +2077,7 @@ export function DetailPanel({
           return <LoadingSpinner text="Loading activity..." />
         }
         if (stravaTimelineState.status === "loaded") {
-          return <StravaActivityDetailContent detail={stravaTimelineState.detail} onBack={() => {}} />
+          return <StravaActivityDetailContent detail={stravaTimelineState.detail} onBack={() => onTimelineEventBack?.()} />
         }
         if (stravaTimelineState.status === "error") {
           return <p className="py-12 text-center text-xs text-red-400">{stravaTimelineState.message}</p>
@@ -2159,7 +2163,10 @@ export function DetailPanel({
           <button
             key={ev.id}
             type="button"
-            onClick={() => onClusterEventHighlight?.(ev.id)}
+            onClick={() => {
+                onClusterEventHighlight?.(ev.id)
+                onClusterEventSelect?.(ev)
+              }}
             className={cn(
               "w-full rounded-lg border px-3 py-2.5 text-left transition-all",
               "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700",
