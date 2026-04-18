@@ -15,7 +15,6 @@ model User {
   linkedinUrl      String?        @unique @map("linkedin_url")
   linkedin         Json?
   strava           Json?
-  mrkoll           Json?
   activeCompany    Json?          @map("active_company")
   krafman          Json?
   twitter          Json?

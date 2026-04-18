@@ -23,7 +23,6 @@ export const userSelect = {
   linkedinUrl: true,
   linkedin: true,
   strava: true,
-  mrkoll: true,
   activeCompany: true,
   krafman: true,
   twitter: true,
@@ -114,7 +113,6 @@ export function serializeUserRecord(user: UserWithTwitterCache): UserRecordData 
     linkedin: user.linkedin as UserRecordData["linkedin"],
     linkedinUrl: user.linkedinUrl,
     strava: user.strava as UserRecordData["strava"],
-    mrkoll: user.mrkoll as UserRecordData["mrkoll"],
     activeCompany: user.activeCompany as UserRecordData["activeCompany"],
     krafman: user.krafman as UserRecordData["krafman"],
     twitter: serializeTwitterProfile(

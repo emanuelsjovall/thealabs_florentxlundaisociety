@@ -9,7 +9,6 @@ import { DetailPanel } from "@/components/detail-panel"
 import type {
   LinkedInPanelState,
   StravaPanelState,
-  MrkollPanelState,
   KrafmanPanelState,
   TwitterPanelState,
   GithubPanelState,
@@ -17,10 +16,6 @@ import type {
 } from "@/components/detail-panel"
 import type { LinkedInSearchResult } from "@/lib/linkedin"
 import type { StravaSearchResult } from "@/lib/strava"
-import type {
-  MrkollSearchResult,
-  MrkollCompanyEngagement,
-} from "@/lib/mrkoll.types"
 import type { TwitterSearchResult } from "@/lib/twitter-api"
 import { normalizeTwitterUsername } from "@/lib/twitter-api"
 import type { GithubSearchResult } from "@/lib/github-api"
@@ -28,6 +23,7 @@ import { normalizeGithubLogin } from "@/lib/github-api"
 import {
   buildDefaultPerson,
   extractTwitterUsername,
+  type ActiveCompanyEngagement,
   type UserPerson,
   type UserRecordData,
   type UserRecordPatch,
@@ -70,7 +66,6 @@ export default function UserPage() {
     | "linkedin"
     | "x"
     | "strava"
-    | "mrkoll"
     | "company"
     | "breach"
     | "github"
@@ -81,13 +76,12 @@ export default function UserPage() {
     null
   )
   const [stravaState, setStravaState] = useState<StravaPanelState | null>(null)
-  const [mrkollState, setMrkollState] = useState<MrkollPanelState | null>(null)
   const [krafmanState, setKrafmanState] = useState<KrafmanPanelState | null>(
     null
   )
   const [breachState, setBreachState] = useState<BreachPanelState | null>(null)
   const [activeCompany, setActiveCompany] =
-    useState<MrkollCompanyEngagement | null>(null)
+    useState<ActiveCompanyEngagement | null>(null)
   const [person, setPerson] = useState<UserPerson | null>(null)
   const [twitterState, setTwitterState] = useState<TwitterPanelState | null>(
     null
@@ -147,9 +141,6 @@ export default function UserPage() {
           }
           if (data.data.strava) {
             setStravaState({ status: "profile", profile: data.data.strava })
-          }
-          if (data.data.mrkoll) {
-            setMrkollState({ status: "profile", profile: data.data.mrkoll })
           }
           if (data.data.activeCompany) {
             setActiveCompany(data.data.activeCompany)
@@ -594,131 +585,6 @@ export default function UserPage() {
     }
   }, [])
 
-  /* ─── Mrkoll ─── */
-
-  const handleMrkollSelect = useCallback(async () => {
-    if (mrkollState?.status === "profile") {
-      setSelectedNode("mrkoll")
-      return
-    }
-
-    setSelectedNode("mrkoll")
-    setMrkollState({ status: "searching" })
-
-    try {
-      const res = await fetch("/api/mrkoll/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: targetName }),
-      })
-      const data = await res.json()
-
-      if (data.ok) {
-        setMrkollState({
-          status: "search-results",
-          results: data.data,
-          query: targetName,
-        })
-      } else {
-        setMrkollState({ status: "error", message: data.error })
-      }
-    } catch {
-      setMrkollState({ status: "error", message: "Failed to search Mrkoll" })
-    }
-  }, [mrkollState, targetName])
-
-  const handleRetryMrkollSearch = useCallback(async (searchQuery: string) => {
-    setMrkollState({ status: "searching" })
-
-    try {
-      const res = await fetch("/api/mrkoll/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: searchQuery }),
-      })
-      const data = await res.json()
-
-      if (data.ok) {
-        setMrkollState({
-          status: "search-results",
-          results: data.data,
-          query: searchQuery,
-        })
-      } else {
-        setMrkollState({ status: "error", message: data.error })
-      }
-    } catch {
-      setMrkollState({ status: "error", message: "Failed to search Mrkoll" })
-    }
-  }, [])
-
-  const loadKrafmanCompany = useCallback(
-    async (company: MrkollCompanyEngagement) => {
-      if (!company.krafmanUrl) return
-
-      setActiveCompany(company)
-      setKrafmanState({ status: "scraping", companyName: company.companyName })
-      void saveUserRecord({ activeCompany: company })
-
-      try {
-        const res = await fetch("/api/krafman/scrape", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: company.krafmanUrl }),
-        })
-        const data = await res.json()
-
-        if (data.ok) {
-          setKrafmanState({ status: "profile", profile: data.data })
-          await saveUserRecord({
-            activeCompany: company,
-            krafman: data.data,
-          })
-        } else {
-          setKrafmanState({ status: "error", message: data.error })
-        }
-      } catch {
-        setKrafmanState({ status: "error", message: "Failed to load company" })
-      }
-    },
-    [saveUserRecord]
-  )
-
-  const handleSelectMrkollResult = useCallback(
-    async (result: MrkollSearchResult) => {
-      setMrkollState({ status: "scraping", name: result.name })
-
-      try {
-        const res = await fetch("/api/mrkoll/scrape", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: result.profileUrl }),
-        })
-        const data = await res.json()
-
-        if (data.ok) {
-          setMrkollState({ status: "profile", profile: data.data })
-          const firstCompanyWithKrafman = data.data.companies?.find(
-            (c: MrkollCompanyEngagement) => c.krafmanUrl
-          )
-          await saveUserRecord({
-            mrkoll: data.data,
-            activeCompany: firstCompanyWithKrafman ?? null,
-          })
-          if (firstCompanyWithKrafman) {
-            setActiveCompany(firstCompanyWithKrafman)
-            loadKrafmanCompany(firstCompanyWithKrafman)
-          }
-        } else {
-          setMrkollState({ status: "error", message: data.error })
-        }
-      } catch {
-        setMrkollState({ status: "error", message: "Failed to load profile" })
-      }
-    },
-    [loadKrafmanCompany, saveUserRecord]
-  )
-
   /* ─── Breach ─── */
 
   const handleBreachSelect = useCallback(async () => {
@@ -748,18 +614,6 @@ export default function UserPage() {
       setBreachState({ status: "error", message: "Failed to search breach records" })
     }
   }, [breachState, targetName, saveUserRecord])
-
-  /* ─── Krafman ─── */
-
-  const handleOpenCompany = useCallback(
-    (company: MrkollCompanyEngagement) => {
-      if (company.krafmanUrl) {
-        loadKrafmanCompany(company)
-        setSelectedNode("company")
-      }
-    },
-    [loadKrafmanCompany]
-  )
 
   const handleSelectSubject = useCallback(() => {
     setSelectedNode("subject")
@@ -875,7 +729,6 @@ export default function UserPage() {
         | "x"
         | "github"
         | "strava"
-        | "mrkoll"
         | "company"
         | "breach"
         | "notes"
@@ -888,8 +741,6 @@ export default function UserPage() {
         handleGithubSelect()
       } else if (source === "strava") {
         handleStravaSelect()
-      } else if (source === "mrkoll") {
-        handleMrkollSelect()
       } else if (source === "breach") {
         handleBreachSelect()
       } else {
@@ -900,7 +751,6 @@ export default function UserPage() {
       handleLinkedinSelect,
       handleGithubSelect,
       handleStravaSelect,
-      handleMrkollSelect,
       handleTwitterSelect,
       handleBreachSelect,
     ]
@@ -993,9 +843,6 @@ export default function UserPage() {
             stravaProfile={
               stravaState?.status === "profile" ? stravaState.profile : null
             }
-            mrkollProfile={
-              mrkollState?.status === "profile" ? mrkollState.profile : null
-            }
             krafmanProfile={
               krafmanState?.status === "profile" ? krafmanState.profile : null
             }
@@ -1031,8 +878,6 @@ export default function UserPage() {
             linkedinState?.status === "profile" ? linkedinState.profile : null,
           stravaProfile:
             stravaState?.status === "profile" ? stravaState.profile : null,
-          mrkollProfile:
-            mrkollState?.status === "profile" ? mrkollState.profile : null,
           githubProfile:
             githubState?.status === "profile" ? githubState.profile : null,
         }}
@@ -1042,10 +887,6 @@ export default function UserPage() {
         stravaState={stravaState}
         onSelectStravaResult={handleSelectStravaResult}
         onRetryStravaSearch={handleRetryStravaSearch}
-        mrkollState={mrkollState}
-        onSelectMrkollResult={handleSelectMrkollResult}
-        onRetryMrkollSearch={handleRetryMrkollSearch}
-        onOpenCompany={handleOpenCompany}
         krafmanState={krafmanState}
         twitterState={twitterState}
         onSelectTwitterResult={handleSelectTwitterResult}

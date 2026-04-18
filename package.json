@@ -10,7 +10,6 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "mrkoll": "tsx scripts/mrkoll.ts",
     "krafman": "tsx scripts/krafman.ts",
     "scrape": "tsx --env-file=.env.local scripts/try-scrape.ts",
     "test": "vitest run",

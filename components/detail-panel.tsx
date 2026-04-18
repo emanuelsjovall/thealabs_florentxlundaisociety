@@ -21,11 +21,6 @@ import type {
   StravaActivity,
   StravaActivityDetail,
 } from "@/lib/strava"
-import type {
-  MrkollSearchResult,
-  MrkollProfile,
-  MrkollCompanyEngagement,
-} from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { GithubSearchResult } from "@/lib/github-api"
 import type { TwitterSearchResult } from "@/lib/twitter-api"
@@ -512,7 +507,6 @@ interface SubjectPanelData {
   readonly updatedAt: string | null
   readonly linkedinProfile: LinkedInProfile | null
   readonly stravaProfile: StravaProfile | null
-  readonly mrkollProfile: MrkollProfile | null
   readonly githubProfile: UserGithubProfile | null
 }
 
@@ -531,22 +525,6 @@ function SubjectContent({ subject }: { subject: SubjectPanelData }) {
       ? {
           label: "Strava",
           value: `${subject.stravaProfile.totalActivities} activities`,
-        }
-      : null,
-    subject.mrkollProfile
-      ? {
-          label: "Mrkoll",
-          value:
-            [
-              subject.mrkollProfile.age != null
-                ? `${subject.mrkollProfile.age} years old`
-                : null,
-              subject.mrkollProfile.companies.length > 0
-                ? `${subject.mrkollProfile.companies.length} company engagements`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ") || "Profile loaded",
         }
       : null,
     subject.githubProfile
@@ -1007,187 +985,6 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
               />
             ))}
           </div>
-        </Section>
-      )}
-    </div>
-  )
-}
-
-/* ─── Mrkoll Search Results ─── */
-
-function MrkollSearchResultsList({
-  results,
-  searchQuery,
-  onSelect,
-  onRetry,
-}: {
-  results: readonly MrkollSearchResult[]
-  searchQuery: string
-  onSelect: (result: MrkollSearchResult) => void
-  onRetry: (query: string) => void
-}) {
-  return (
-    <div className="space-y-1">
-      <SearchBar
-        initialQuery={searchQuery}
-        placeholder="Search Mrkoll..."
-        onSearch={onRetry}
-      />
-      {results.length === 0 ? (
-        <p className="py-12 text-center text-xs text-neutral-600">
-          No results found
-        </p>
-      ) : (
-        <p className="mb-4 text-[10px] text-neutral-600">
-          {results.length} potential{" "}
-          {results.length === 1 ? "match" : "matches"}
-        </p>
-      )}
-      {results.map((result, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(result)}
-          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
-            {result.name.charAt(0)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="truncate text-sm text-foreground">{result.name}</p>
-              {result.age != null && (
-                <span className="shrink-0 text-[10px] text-neutral-600">
-                  · {result.age} yr
-                </span>
-              )}
-            </div>
-            {result.address && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
-                {result.address}
-              </p>
-            )}
-            {result.extraInfo.length > 0 && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-600">
-                {result.extraInfo.join(" · ")}
-              </p>
-            )}
-          </div>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/* ─── Mrkoll Profile Content ─── */
-
-function MrkollProfileContent({
-  profile,
-  onOpenCompany,
-}: {
-  profile: MrkollProfile
-  onOpenCompany: (company: MrkollCompanyEngagement) => void
-}) {
-  return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-xl font-light text-foreground">{profile.name}</h3>
-        {profile.age != null && (
-          <p className="mt-1.5 text-sm text-neutral-400">
-            {profile.age} years old
-          </p>
-        )}
-        {profile.address && (
-          <p className="mt-1 text-[11px] text-neutral-600">{profile.address}</p>
-        )}
-        {profile.location && (
-          <p className="mt-0.5 text-[11px] text-neutral-600">
-            {profile.location}
-          </p>
-        )}
-      </div>
-
-      {profile.personnummer && (
-        <Section label="Personnummer">
-          <Card>
-            <p className="font-mono text-sm text-foreground">
-              {profile.personnummer}
-            </p>
-          </Card>
-        </Section>
-      )}
-
-      {profile.phoneNumbers.length > 0 && (
-        <Section label="Phone Numbers">
-          <div className="space-y-2">
-            {profile.phoneNumbers.map((phone) => (
-              <Card key={phone}>
-                <p className="text-sm text-foreground">{phone}</p>
-              </Card>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {profile.companies.length > 0 && (
-        <Section label="Company Engagements">
-          <div className="space-y-2">
-            {profile.companies.map((company, i) => (
-              <button
-                key={i}
-                onClick={() => onOpenCompany(company)}
-                className="block w-full rounded-lg border border-neutral-800 bg-neutral-900/40 p-3.5 text-left transition-colors hover:border-emerald-800/60"
-              >
-                <p className="text-sm text-foreground">{company.companyName}</p>
-                {company.orgNumber && (
-                  <p className="mt-0.5 font-mono text-[11px] text-neutral-600">
-                    {company.orgNumber}
-                  </p>
-                )}
-                {company.roles.length > 0 && (
-                  <p className="mt-1 text-xs text-neutral-500">
-                    {company.roles.join(", ")}
-                  </p>
-                )}
-                {company.registrationYear && (
-                  <p className="mt-0.5 text-[10px] text-neutral-700">
-                    Reg. {company.registrationYear}
-                  </p>
-                )}
-                {company.krafmanUrl && (
-                  <p className="mt-1.5 text-[10px] text-emerald-600">
-                    View company details →
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {profile.household.length > 0 && (
-        <Section label="Household">
-          <div className="space-y-2">
-            {profile.household.map((member, i) => (
-              <Card key={i}>
-                <p className="text-sm text-foreground">{member.name}</p>
-                {member.age != null && (
-                  <p className="mt-0.5 text-[11px] text-neutral-600">
-                    {member.age} years old
-                  </p>
-                )}
-              </Card>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {profile.propertyInfo && (
-        <Section label="Property">
-          <Card>
-            <p className="text-xs leading-relaxed text-neutral-400">
-              {profile.propertyInfo}
-            </p>
-          </Card>
         </Section>
       )}
     </div>
@@ -1748,17 +1545,6 @@ export type StravaPanelState =
   | { status: "profile"; profile: StravaProfile }
   | { status: "error"; message: string }
 
-export type MrkollPanelState =
-  | { status: "searching" }
-  | {
-      status: "search-results"
-      results: readonly MrkollSearchResult[]
-      query: string
-    }
-  | { status: "scraping"; name: string }
-  | { status: "profile"; profile: MrkollProfile }
-  | { status: "error"; message: string }
-
 export type TwitterPanelState =
   | { status: "searching" }
   | {
@@ -1799,7 +1585,6 @@ interface DetailPanelProps {
     | "linkedin"
     | "x"
     | "strava"
-    | "mrkoll"
     | "company"
     | "breach"
     | "github"
@@ -1813,10 +1598,6 @@ interface DetailPanelProps {
   stravaState: StravaPanelState | null
   onSelectStravaResult: (result: StravaSearchResult) => void
   onRetryStravaSearch: (query: string) => void
-  mrkollState: MrkollPanelState | null
-  onSelectMrkollResult: (result: MrkollSearchResult) => void
-  onRetryMrkollSearch: (query: string) => void
-  onOpenCompany: (company: MrkollCompanyEngagement) => void
   krafmanState: KrafmanPanelState | null
   twitterState: TwitterPanelState | null
   onSelectTwitterResult: (result: TwitterSearchResult) => void
@@ -1843,10 +1624,6 @@ export function DetailPanel({
   stravaState,
   onSelectStravaResult,
   onRetryStravaSearch,
-  mrkollState,
-  onSelectMrkollResult,
-  onRetryMrkollSearch,
-  onOpenCompany,
   krafmanState,
   twitterState,
   onSelectTwitterResult,
@@ -1913,38 +1690,6 @@ export function DetailPanel({
         return (
           <p className="py-12 text-center text-xs text-red-400">
             {stravaState.message}
-          </p>
-        )
-    }
-  }
-
-  function renderMrkollContent(): ReactNode {
-    if (!mrkollState) return null
-    switch (mrkollState.status) {
-      case "searching":
-        return <LoadingSpinner text="Searching Mrkoll..." />
-      case "search-results":
-        return (
-          <MrkollSearchResultsList
-            results={mrkollState.results}
-            searchQuery={mrkollState.query}
-            onSelect={onSelectMrkollResult}
-            onRetry={onRetryMrkollSearch}
-          />
-        )
-      case "scraping":
-        return <LoadingSpinner text={`Loading ${mrkollState.name}...`} />
-      case "profile":
-        return (
-          <MrkollProfileContent
-            profile={mrkollState.profile}
-            onOpenCompany={onOpenCompany}
-          />
-        )
-      case "error":
-        return (
-          <p className="py-12 text-center text-xs text-red-400">
-            {mrkollState.message}
           </p>
         )
     }
@@ -2074,10 +1819,6 @@ export function DetailPanel({
         return githubState?.status === "search-results"
           ? "GITHUB — SELECT USER"
           : "GITHUB"
-      case "mrkoll":
-        return mrkollState?.status === "search-results"
-          ? "MRKOLL — SELECT PERSON"
-          : "MRKOLL"
       case "company":
         return "COMPANY"
       case "breach":
@@ -2097,8 +1838,6 @@ export function DetailPanel({
         return "bg-blue-600/40"
       case "strava":
         return "bg-orange-500/40"
-      case "mrkoll":
-        return "bg-purple-600/40"
       case "company":
         return "bg-emerald-600/40"
       case "x":
@@ -2122,8 +1861,6 @@ export function DetailPanel({
         return "text-blue-500"
       case "strava":
         return "text-orange-500"
-      case "mrkoll":
-        return "text-purple-500"
       case "company":
         return "text-emerald-500"
       case "x":
@@ -2181,7 +1918,6 @@ export function DetailPanel({
         {source === "strava" && renderStravaContent()}
         {source === "x" && renderTwitterContent()}
         {source === "github" && renderGithubContent()}
-        {source === "mrkoll" && renderMrkollContent()}
         {source === "company" && renderKrafmanContent()}
         {source === "breach" && renderBreachContent()}
         {source === "notes" && (

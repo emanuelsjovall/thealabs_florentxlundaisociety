@@ -1,7 +1,15 @@
 import type { LinkedInProfile } from "@/lib/linkedin"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
-import type { MrkollCompanyEngagement, MrkollProfile } from "@/lib/mrkoll.types"
 import type { StravaProfile } from "@/lib/strava"
+
+/** Persisted JSON shape for `active_company` — company linked for Krafman scraping. */
+export interface ActiveCompanyEngagement {
+  readonly companyName: string
+  readonly roles: readonly string[]
+  readonly registrationYear: number | null
+  readonly orgNumber: string | null
+  readonly krafmanUrl: string | null
+}
 import type { BreachSearchResult } from "@/lib/breach"
 import personData from "@/data/mock/person.json"
 
@@ -98,8 +106,7 @@ export type UserRecordData = {
   readonly linkedinUrl: string | null
   readonly linkedin: LinkedInProfile | null
   readonly strava: StravaProfile | null
-  readonly mrkoll: MrkollProfile | null
-  readonly activeCompany: MrkollCompanyEngagement | null
+  readonly activeCompany: ActiveCompanyEngagement | null
   readonly krafman: KrafmanCompanyProfile | null
   readonly twitter: UserTwitterProfile | null
   readonly twitterUsername: string | null
@@ -116,8 +123,7 @@ export type UserRecordPatch = {
   readonly linkedin?: LinkedInProfile | null
   readonly linkedinUrl?: string | null
   readonly strava?: StravaProfile | null
-  readonly mrkoll?: MrkollProfile | null
-  readonly activeCompany?: MrkollCompanyEngagement | null
+  readonly activeCompany?: ActiveCompanyEngagement | null
   readonly krafman?: KrafmanCompanyProfile | null
   readonly twitter?: UserTwitterProfile | null
   readonly twitterUsername?: string | null

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import type { LinkedInProfile } from "@/lib/linkedin"
 import type { StravaProfile } from "@/lib/strava"
-import type { MrkollProfile } from "@/lib/mrkoll.types"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { UserGithubProfile, UserTwitterProfile } from "@/lib/user-record"
 import type { BreachSearchResult } from "@/lib/breach"
@@ -93,56 +92,6 @@ function StravaNode({
           <p className="text-sm text-neutral-500">Click to search</p>
           <p className="mt-1 text-xs text-neutral-700">
             Find matching athletes
-          </p>
-        </>
-      )}
-    </div>
-  )
-}
-
-function MrkollNode({
-  onSelect,
-  profile,
-}: {
-  onSelect: () => void
-  profile: MrkollProfile | null
-}) {
-  const d = profile
-
-  return (
-    <div
-      onClick={onSelect}
-      onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
-    >
-      <div className="mb-3">
-        <span className="font-mono text-[10px] tracking-[0.2em] text-purple-500">
-          MRKOLL
-        </span>
-      </div>
-      {d ? (
-        <>
-          <p className="text-base font-light text-foreground">{d.name}</p>
-          <div className="mt-3 space-y-1.5">
-            {d.age != null && (
-              <p className="text-xs text-neutral-500">{d.age} years old</p>
-            )}
-            {d.address && (
-              <p className="text-xs text-neutral-600">{d.address}</p>
-            )}
-            {d.companies.length > 0 && (
-              <p className="text-xs text-neutral-500">
-                {d.companies.length}{" "}
-                {d.companies.length === 1 ? "company" : "companies"}
-              </p>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="text-sm text-neutral-500">Click to search</p>
-          <p className="mt-1 text-xs text-neutral-700">
-            Swedish public records
           </p>
         </>
       )}
@@ -406,7 +355,6 @@ interface GraphCanvasProps {
       | "x"
       | "github"
       | "strava"
-      | "mrkoll"
       | "company"
       | "breach"
       | "notes"
@@ -416,7 +364,6 @@ interface GraphCanvasProps {
   twitterProfile: UserTwitterProfile | null
   githubProfile: UserGithubProfile | null
   stravaProfile: StravaProfile | null
-  mrkollProfile: MrkollProfile | null
   krafmanProfile: KrafmanCompanyProfile | null
   showCompanyNode: boolean
   breachResult: BreachSearchResult | null
@@ -431,7 +378,6 @@ export function GraphCanvas({
   twitterProfile,
   githubProfile,
   stravaProfile,
-  mrkollProfile,
   krafmanProfile,
   showCompanyNode,
   breachResult,
@@ -442,7 +388,6 @@ export function GraphCanvas({
   const [showX, setShowX] = useState(false)
   const [showGithub, setShowGithub] = useState(false)
   const [showStrava, setShowStrava] = useState(false)
-  const [showMrkoll, setShowMrkoll] = useState(false)
   const [showCompany, setShowCompany] = useState(false)
   const [showBreach, setShowBreach] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
@@ -459,7 +404,6 @@ export function GraphCanvas({
     const t1 = setTimeout(() => setShowLinkedin(true), 600)
     const t2 = setTimeout(() => setShowX(true), 2400)
     const t3 = setTimeout(() => setShowStrava(true), 1500)
-    const t4 = setTimeout(() => setShowMrkoll(true), 1000)
     const t5 = setTimeout(() => setShowBreach(true), 1800)
     const t6 = setTimeout(() => setShowNotes(true), 1200)
     const t7 = setTimeout(() => setShowGithub(true), 2100)
@@ -467,7 +411,6 @@ export function GraphCanvas({
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
-      clearTimeout(t4)
       clearTimeout(t5)
       clearTimeout(t6)
       clearTimeout(t7)
@@ -630,19 +573,6 @@ export function GraphCanvas({
           <line
             x1="50%"
             y1="50%"
-            x2="34%"
-            y2="65%"
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth="1"
-            strokeDasharray="3 6"
-            className={cn(
-              "transition-opacity duration-700",
-              showMrkoll ? "opacity-100" : "opacity-0"
-            )}
-          />
-          <line
-            x1="50%"
-            y1="50%"
             x2="50%"
             y2="18%"
             stroke="rgba(255,255,255,0.06)"
@@ -753,23 +683,6 @@ export function GraphCanvas({
           </div>
         </div>
 
-        {/* Mrkoll node */}
-        <div className="absolute top-[65%] left-[34%] -translate-x-1/2 -translate-y-1/2">
-          <div
-            className={cn(
-              "transition-all duration-500 ease-out",
-              showMrkoll
-                ? "translate-y-0 opacity-100"
-                : "pointer-events-none translate-y-3 opacity-0"
-            )}
-          >
-            <MrkollNode
-              onSelect={() => onSelect("mrkoll")}
-              profile={mrkollProfile}
-            />
-          </div>
-        </div>
-
         {/* Notes node */}
         <div className="absolute top-[88%] left-[22%] -translate-x-1/2 -translate-y-1/2">
           <div
@@ -805,7 +718,7 @@ export function GraphCanvas({
           </div>
         </div>
 
-        {/* Company node (appears after mrkoll finds companies) */}
+        {/* Company node (when active company / Krafman data exists) */}
         {showCompanyNode && (
           <div className="absolute top-[82%] left-[52%] -translate-x-1/2 -translate-y-1/2">
             <div

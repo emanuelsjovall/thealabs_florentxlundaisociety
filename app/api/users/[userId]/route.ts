@@ -44,7 +44,6 @@ export async function PATCH(
     linkedin?: unknown | null
     linkedinUrl?: string | null
     strava?: unknown | null
-    mrkoll?: unknown | null
     activeCompany?: unknown | null
     krafman?: unknown | null
     twitter?: unknown | null
@@ -64,7 +63,6 @@ export async function PATCH(
           ? undefined
           : body.linkedinUrl?.trim() || null,
       strava: toJsonInput(body.strava),
-      mrkoll: toJsonInput(body.mrkoll),
       activeCompany: toJsonInput(body.activeCompany),
       krafman: toJsonInput(body.krafman),
       twitter: toJsonInput(body.twitter),
