@@ -42,6 +42,14 @@ export interface MrkollNeighbor {
   readonly profileUrl: string | null;
 }
 
+export interface MrkollCompanyEngagement {
+  readonly companyName: string;
+  readonly roles: readonly string[];
+  readonly registrationYear: number | null;
+  readonly orgNumber: string | null;
+  readonly krafmanUrl: string | null;
+}
+
 export interface MrkollProfile {
   readonly url: string;
   readonly name: string;
@@ -50,6 +58,7 @@ export interface MrkollProfile {
   readonly location: string | null;
   readonly personnummer: string | null;
   readonly phoneNumbers: readonly string[];
+  readonly companies: readonly MrkollCompanyEngagement[];
   readonly household: readonly MrkollHouseholdMember[];
   readonly propertyInfo: string | null;
   readonly neighbors: readonly MrkollNeighbor[];

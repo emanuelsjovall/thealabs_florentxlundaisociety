@@ -46,6 +46,14 @@ export interface LinkedInSkill {
   readonly endorsementCount: number | null;
 }
 
+export interface LinkedInPost {
+  readonly text: string | null;
+  readonly date: string | null;
+  readonly likes: number | null;
+  readonly comments: number | null;
+  readonly reposts: number | null;
+}
+
 export interface LinkedInProfile {
   readonly linkedInUrl: string;
   readonly name: string | null;
@@ -56,6 +64,7 @@ export interface LinkedInProfile {
   readonly experiences: readonly LinkedInExperience[];
   readonly educations: readonly LinkedInEducation[];
   readonly skills: readonly LinkedInSkill[];
+  readonly posts: readonly LinkedInPost[];
 }
 
 export interface ScrapeLinkedInProfileOptions {

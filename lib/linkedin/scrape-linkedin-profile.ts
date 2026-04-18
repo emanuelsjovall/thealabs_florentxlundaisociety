@@ -83,6 +83,23 @@ const PROFILE_TOOL_SCHEMA = {
           required: ["name", "endorsementCount"],
         },
       },
+      posts: {
+        type: "array" as const,
+        items: {
+          type: "object" as const,
+          properties: {
+            text: { type: ["string", "null"] as const },
+            date: {
+              type: ["string", "null"] as const,
+              description: "When the post was published, e.g. '2w', '3mo', '1yr'",
+            },
+            likes: { type: ["number", "null"] as const },
+            comments: { type: ["number", "null"] as const },
+            reposts: { type: ["number", "null"] as const },
+          },
+          required: ["text", "date", "likes", "comments", "reposts"],
+        },
+      },
     },
     required: [
       "name",
@@ -93,6 +110,7 @@ const PROFILE_TOOL_SCHEMA = {
       "experiences",
       "educations",
       "skills",
+      "posts",
     ],
   },
 };
@@ -230,6 +248,7 @@ export async function scrapeLinkedInProfile(
     const detailPages = [
       { url: `${profileBase}/details/experience/`, label: "experience" },
       { url: `${profileBase}/details/education/`, label: "education" },
+      { url: `${profileBase}/recent-activity/all/`, label: "posts" },
     ];
 
     const detailHtmlParts: string[] = [];
@@ -298,6 +317,7 @@ export async function scrapeLinkedInProfile(
       experiences: (extracted.experiences as LinkedInProfile["experiences"]) ?? [],
       educations: (extracted.educations as LinkedInProfile["educations"]) ?? [],
       skills: (extracted.skills as LinkedInProfile["skills"]) ?? [],
+      posts: (extracted.posts as LinkedInProfile["posts"]) ?? [],
     };
 
     return { ok: true, data: profile };

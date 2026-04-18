@@ -2,10 +2,11 @@ import { load } from "cheerio";
 
 import type {
   StravaActivity,
+  StravaActivityDetail,
   StravaProfile,
   StravaResult,
   StravaSportType,
-} from "@/lib/strava.types";
+} from "@/lib/strava/strava.types";
 
 const BASE_URL = "https://www.strava.com";
 const USER_AGENT =
@@ -144,6 +145,149 @@ export class StravaScraper {
           profileImageUrl,
           totalActivities: activities.total,
           activities: activities.items,
+        },
+      };
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return {
+          ok: false,
+          error: "Not authenticated — session cookie may have expired",
+          code: "SESSION_EXPIRED",
+        };
+      }
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+      return { ok: false, error: message, code: "NETWORK_ERROR" };
+    }
+  }
+
+  async scrapeActivity(
+    activityId: string
+  ): Promise<StravaResult<StravaActivityDetail>> {
+    try {
+      const html = await this.fetchHtml(`/activities/${activityId}`);
+      const $ = load(html);
+
+      const title = $("h1").first().text().trim() || null;
+
+      // Sport type from page title (e.g. "Afternoon Run | Run | Strava")
+      const pageTitle = $("title").text();
+      const sportMatch = pageTitle.match(/\|\s*(\w+)\s*\|/);
+      const sportType: StravaSportType =
+        SPORT_TYPE_MAP[sportMatch?.[1] ?? ""] ?? "Sport";
+
+      // Location
+      const location =
+        $('[class*="location"]').first().text().trim() || null;
+
+      // Stats from inline-stats
+      const statsText = $(".inline-stats").text();
+      const distanceMatch = statsText.match(/([\d.,]+)\s*km\s*Distance/);
+      const distanceMeters = distanceMatch
+        ? parseFloat(distanceMatch[1].replace(",", "")) * 1000
+        : null;
+
+      const movingTimeMatch = statsText.match(
+        /(\d+):(\d+)\s*Moving Time/
+      );
+      const movingTimeSeconds = movingTimeMatch
+        ? parseInt(movingTimeMatch[1], 10) * 60 +
+          parseInt(movingTimeMatch[2], 10)
+        : null;
+
+      const paceMatch = statsText.match(/([\d:]+\s*\/km)/);
+      const pace = paceMatch?.[1]?.trim() ?? null;
+
+      // More stats
+      const moreStatsText = $(".section").text();
+      const elevMatch = moreStatsText.match(/Elevation\s*([\d.,]+)\s*m/);
+      const elevationMeters = elevMatch
+        ? parseFloat(elevMatch[1].replace(",", ""))
+        : null;
+
+      const calMatch = moreStatsText.match(/Calories\s*([\d.,]+)/);
+      const calories = calMatch
+        ? parseInt(calMatch[1].replace(",", ""), 10)
+        : null;
+
+      const elapsedMatch = moreStatsText.match(
+        /Elapsed Time\s*(\d+):(\d+)/
+      );
+      const elapsedTimeSeconds = elapsedMatch
+        ? parseInt(elapsedMatch[1], 10) * 60 +
+          parseInt(elapsedMatch[2], 10)
+        : null;
+
+      // Datetime from ActivityTagging react props
+      const taggingEl = $('[data-react-class="ActivityTagging"]');
+      const taggingProps = taggingEl.attr("data-react-props");
+      let datetime = "";
+      if (taggingProps) {
+        const parsed = JSON.parse(taggingProps) as {
+          readonly activityId?: number;
+        };
+        // Use the activity ID to construct URL reference
+        datetime = parsed.activityId ? "" : "";
+      }
+
+      // Try to get datetime from time element
+      const timeEl = $("time");
+      datetime = timeEl.attr("datetime") ?? "";
+
+      // Kudos & comments
+      const kudosEl = $('[data-react-class="ADPKudosAndComments"]');
+      let kudosCount = 0;
+      let commentsCount = 0;
+      if (kudosEl.length) {
+        const props = JSON.parse(
+          kudosEl.attr("data-react-props") ?? "{}"
+        ) as {
+          readonly kudosCount?: number;
+          readonly commentsCount?: number;
+        };
+        kudosCount = props.kudosCount ?? 0;
+        commentsCount = props.commentsCount ?? 0;
+      }
+
+      // Achievements
+      const achievements: string[] = [];
+      $("[class*=achievement] li, .best-effort").each((_, el) => {
+        const text = $(el).text().trim().replace(/\s+/g, " ");
+        if (text) achievements.push(text);
+      });
+
+      // Description
+      const description =
+        $(".activity-description")
+          .first()
+          .text()
+          .trim()
+          .replace(/Add a description/i, "") || null;
+
+      // Map URL from activity list data (static map)
+      const mapImg = $("img.activity-map, [class*=map] img").first();
+      const mapUrl = mapImg.attr("src") ?? null;
+
+      return {
+        ok: true,
+        data: {
+          id: activityId,
+          title: title ?? "",
+          sportType,
+          datetime,
+          location,
+          distanceMeters,
+          movingTimeSeconds,
+          elapsedTimeSeconds,
+          elevationMeters,
+          calories,
+          pace,
+          kudosCount,
+          commentsCount,
+          achievements,
+          mapUrl,
+          activityUrl: `${BASE_URL}/activities/${activityId}`,
+          description,
         },
       };
     } catch (error) {

@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
-import { scrapeStrava } from "../lib/strava";
+import { scrapeStrava } from "../lib/strava/strava";
 
 async function main(): Promise<void> {
   const username = process.argv[2] ?? "florentxlunda";

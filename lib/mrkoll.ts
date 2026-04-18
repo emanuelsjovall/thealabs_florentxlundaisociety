@@ -3,6 +3,7 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import type { BrowserContext, Page } from "playwright";
 
 import type {
+  MrkollCompanyEngagement,
   MrkollResult,
   MrkollSearchResult,
   MrkollProfile,
@@ -327,6 +328,60 @@ export async function mrkollUrl(
         if (text) phoneNumbers.push(text);
       }
 
+      // Company engagements from the "Bolagsengagemang" section
+      const companies: Array<{
+        companyName: string;
+        roles: string[];
+        registrationYear: number | null;
+        orgNumber: string | null;
+        krafmanUrl: string | null;
+      }> = [];
+      const companyBlocks = main.querySelectorAll(".resBlock");
+      for (const block of companyBlocks) {
+        const header = block.querySelector(".f_line1");
+        if (!header?.textContent?.includes("Bolagsengagemang")) continue;
+
+        const entries = block.querySelectorAll("p.f_line5");
+        for (const entry of entries) {
+          const companyName =
+            entry.querySelector("strong")?.textContent?.trim() || "";
+          const orgNumber =
+            entry
+              .querySelector('span[style*="float"]')
+              ?.textContent?.trim() || null;
+          const krafmanLink = entry.querySelector('a[href*="krafman"]');
+          const krafmanUrl = krafmanLink?.getAttribute("href") || null;
+
+          // Parse roles and registration year from .bxtra text
+          const bxtra =
+            entry.querySelector(".bxtra")?.textContent?.trim() || "";
+          const yearMatch = bxtra.match(/registrerat\s+(\d{4})/);
+          const registrationYear = yearMatch
+            ? parseInt(yearMatch[1], 10)
+            : null;
+
+          // Extract roles: everything after "registrerat YYYY, " and before "Mer info"
+          const rolesText = bxtra
+            .replace(/registrerat\s+\d{4},?\s*/, "")
+            .replace(/Mer info.*$/, "")
+            .trim();
+          const roles = rolesText
+            ? rolesText.split(",").map((r) => r.trim()).filter(Boolean)
+            : [];
+
+          if (companyName) {
+            companies.push({
+              companyName,
+              roles,
+              registrationYear,
+              orgNumber,
+              krafmanUrl,
+            });
+          }
+        }
+        break;
+      }
+
       // Household members from the section after "Hushållet" header
       const household: Array<{
         name: string;
@@ -393,6 +448,7 @@ export async function mrkollUrl(
         location,
         personnummer,
         phoneNumbers,
+        companies,
         household,
         propertyInfo,
         neighbors,
@@ -415,6 +471,7 @@ export async function mrkollUrl(
       location: profileData.location,
       personnummer: profileData.personnummer,
       phoneNumbers: profileData.phoneNumbers,
+      companies: profileData.companies,
       household: profileData.household,
       propertyInfo: profileData.propertyInfo,
       neighbors: profileData.neighbors,

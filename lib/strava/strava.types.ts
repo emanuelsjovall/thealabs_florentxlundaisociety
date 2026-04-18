@@ -40,6 +40,33 @@ export interface StravaActivity {
   readonly activityUrl: string;
 }
 
+export interface StravaSearchResult {
+  readonly name: string;
+  readonly location: string | null;
+  readonly profileImageUrl: string | null;
+  readonly athleteUrl: string;
+}
+
+export interface StravaActivityDetail {
+  readonly id: string;
+  readonly title: string;
+  readonly sportType: StravaSportType;
+  readonly datetime: string;
+  readonly location: string | null;
+  readonly distanceMeters: number | null;
+  readonly movingTimeSeconds: number | null;
+  readonly elapsedTimeSeconds: number | null;
+  readonly elevationMeters: number | null;
+  readonly calories: number | null;
+  readonly pace: string | null;
+  readonly kudosCount: number;
+  readonly commentsCount: number;
+  readonly achievements: readonly string[];
+  readonly mapUrl: string | null;
+  readonly activityUrl: string;
+  readonly description: string | null;
+}
+
 export interface StravaProfile {
   readonly athleteId: string;
   readonly name: string | null;

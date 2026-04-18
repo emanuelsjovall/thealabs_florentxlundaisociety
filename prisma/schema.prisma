@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  normalizedName String   @unique @map("normalized_name")
+  linkedinUrl    String?  @unique @map("linkedin_url")
+  linkedin    Json?
+  twitter     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model LinkedinSearch {
+  id        String   @id @default(cuid())
+  query     String   @unique
+  result    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("linkedin_searches")
+}

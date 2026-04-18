@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import type { LinkedInProfile } from "@/lib/linkedin"
+import type { StravaProfile } from "@/lib/strava"
+import type { MrkollProfile } from "@/lib/mrkoll.types"
+import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import xData from "@/data/mock/x.json"
 
 function LinkedinNode({
@@ -46,6 +49,130 @@ function LinkedinNode({
   )
 }
 
+function StravaNode({
+  onSelect,
+  profile,
+}: {
+  onSelect: () => void
+  profile: StravaProfile | null
+}) {
+  const d = profile
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-orange-500">STRAVA</span>
+      </div>
+      {d ? (
+        <>
+          <p className="text-base font-light text-foreground">{d.name}</p>
+          <div className="mt-3 space-y-1.5">
+            <p className="text-xs text-neutral-500">
+              {d.totalActivities} activities
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to search</p>
+          <p className="mt-1 text-xs text-neutral-700">Find matching athletes</p>
+        </>
+      )}
+    </div>
+  )
+}
+
+function MrkollNode({
+  onSelect,
+  profile,
+}: {
+  onSelect: () => void
+  profile: MrkollProfile | null
+}) {
+  const d = profile
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-purple-500">MRKOLL</span>
+      </div>
+      {d ? (
+        <>
+          <p className="text-base font-light text-foreground">{d.name}</p>
+          <div className="mt-3 space-y-1.5">
+            {d.age != null && <p className="text-xs text-neutral-500">{d.age} years old</p>}
+            {d.address && <p className="text-xs text-neutral-600">{d.address}</p>}
+            {d.companies.length > 0 && (
+              <p className="text-xs text-neutral-500">
+                {d.companies.length} {d.companies.length === 1 ? "company" : "companies"}
+              </p>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Click to search</p>
+          <p className="mt-1 text-xs text-neutral-700">Swedish public records</p>
+        </>
+      )}
+    </div>
+  )
+}
+
+function CompanyNode({
+  onSelect,
+  profile,
+}: {
+  onSelect: () => void
+  profile: KrafmanCompanyProfile | null
+}) {
+  const d = profile
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+    >
+      <div className="mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-500">COMPANY</span>
+      </div>
+      {d ? (
+        <>
+          <p className="text-base font-light text-foreground">{d.companyName}</p>
+          <div className="mt-3 space-y-1.5">
+            {d.orgNumber && <p className="font-mono text-xs text-neutral-500">{d.orgNumber}</p>}
+            {d.status && (
+              <span className={cn(
+                "inline-block rounded px-1.5 py-0.5 text-[10px]",
+                d.status.toLowerCase() === "aktiv"
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : "bg-red-500/10 text-red-400"
+              )}>
+                {d.status}
+              </span>
+            )}
+            {d.industry && <p className="text-xs text-neutral-600">{d.industry}</p>}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">Loading...</p>
+          <p className="mt-1 text-xs text-neutral-700">Company details via Krafman</p>
+        </>
+      )}
+    </div>
+  )
+}
+
 function XNode({ onSelect }: { onSelect: () => void }) {
   const d = xData.profile
 
@@ -78,14 +205,21 @@ interface Viewport {
 }
 
 interface GraphCanvasProps {
-  onSelect: (source: "linkedin" | "x") => void
+  onSelect: (source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => void
   onDeselect: () => void
   linkedinProfile: LinkedInProfile | null
+  stravaProfile: StravaProfile | null
+  mrkollProfile: MrkollProfile | null
+  krafmanProfile: KrafmanCompanyProfile | null
+  showCompanyNode: boolean
 }
 
-export function GraphCanvas({ onSelect, onDeselect, linkedinProfile }: GraphCanvasProps) {
+export function GraphCanvas({ onSelect, onDeselect, linkedinProfile, stravaProfile, mrkollProfile, krafmanProfile, showCompanyNode }: GraphCanvasProps) {
   const [showLinkedin, setShowLinkedin] = useState(false)
   const [showX, setShowX] = useState(false)
+  const [showStrava, setShowStrava] = useState(false)
+  const [showMrkoll, setShowMrkoll] = useState(false)
+  const [showCompany, setShowCompany] = useState(false)
   const [viewport, setViewport] = useState<Viewport>({ scale: 1, x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -94,8 +228,18 @@ export function GraphCanvas({ onSelect, onDeselect, linkedinProfile }: GraphCanv
   useEffect(() => {
     const t1 = setTimeout(() => setShowLinkedin(true), 600)
     const t2 = setTimeout(() => setShowX(true), 2400)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    const t3 = setTimeout(() => setShowStrava(true), 1500)
+    const t4 = setTimeout(() => setShowMrkoll(true), 1000)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
   }, [])
+
+  useEffect(() => {
+    if (showCompanyNode) {
+      const t = setTimeout(() => setShowCompany(true), 400)
+      return () => clearTimeout(t)
+    }
+    setShowCompany(false)
+  }, [showCompanyNode])
 
   // Block native scroll on the canvas so the page never scrolls while hovering the graph
   useEffect(() => {
@@ -198,6 +342,32 @@ export function GraphCanvas({ onSelect, onDeselect, linkedinProfile }: GraphCanv
             strokeDasharray="3 6"
             className={cn("transition-opacity duration-700", showX ? "opacity-100" : "opacity-0")}
           />
+          <line
+            x1="50%" y1="50%"
+            x2="76%" y2="32%"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            className={cn("transition-opacity duration-700", showStrava ? "opacity-100" : "opacity-0")}
+          />
+          <line
+            x1="50%" y1="50%"
+            x2="30%" y2="65%"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            className={cn("transition-opacity duration-700", showMrkoll ? "opacity-100" : "opacity-0")}
+          />
+          {showCompanyNode && (
+            <line
+              x1="30%" y1="65%"
+              x2="52%" y2="82%"
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth="1"
+              strokeDasharray="3 6"
+              className={cn("transition-opacity duration-700", showCompany ? "opacity-100" : "opacity-0")}
+            />
+          )}
         </svg>
 
         {/* Center dot */}
@@ -227,6 +397,47 @@ export function GraphCanvas({ onSelect, onDeselect, linkedinProfile }: GraphCanv
             <XNode onSelect={() => onSelect("x")} />
           </div>
         </div>
+
+        {/* Strava node */}
+        <div className="absolute left-[76%] top-[32%] -translate-x-1/2 -translate-y-1/2">
+          <div className={cn(
+            "transition-all duration-500 ease-out",
+            showStrava ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+          )}>
+            <StravaNode
+              onSelect={() => onSelect("strava")}
+              profile={stravaProfile}
+            />
+          </div>
+        </div>
+
+        {/* Mrkoll node */}
+        <div className="absolute left-[30%] top-[65%] -translate-x-1/2 -translate-y-1/2">
+          <div className={cn(
+            "transition-all duration-500 ease-out",
+            showMrkoll ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+          )}>
+            <MrkollNode
+              onSelect={() => onSelect("mrkoll")}
+              profile={mrkollProfile}
+            />
+          </div>
+        </div>
+
+        {/* Company node (appears after mrkoll finds companies) */}
+        {showCompanyNode && (
+          <div className="absolute left-[52%] top-[82%] -translate-x-1/2 -translate-y-1/2">
+            <div className={cn(
+              "transition-all duration-500 ease-out",
+              showCompany ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+            )}>
+              <CompanyNode
+                onSelect={() => onSelect("company")}
+                profile={krafmanProfile}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Zoom controls */}

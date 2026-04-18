@@ -5,6 +5,7 @@ export type {
   LinkedInExperience,
   LinkedInEducation,
   LinkedInSkill,
+  LinkedInPost,
   LinkedInSearchResult,
   ScrapeLinkedInProfileOptions,
   Result,
