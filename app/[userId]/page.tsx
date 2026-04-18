@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import { useState, useCallback, useEffect } from "react"
-import { useParams } from "next/navigation"
+import React, { useState, useCallback, useEffect, useRef } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GraphCanvas } from "@/components/graph-canvas"
@@ -41,7 +40,7 @@ interface PersonNodeProps {
 
 function PersonNode({ person, onSelect }: PersonNodeProps) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-700">
+    <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-700">
       <button
         type="button"
         onClick={onSelect}
@@ -57,9 +56,22 @@ export default function UserPage() {
   const params = useParams<{ userId: string }>()
   const userId = params.userId
 
+  const router = useRouter()
   const [targetName, setTargetName] = useState("")
   const [loading, setLoading] = useState(true)
   const [chatActive, setChatActive] = useState(false)
+  const [entered, setEntered] = useState(false)
+  const [exiting, setExiting] = useState(false)
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  function handleBack() {
+    setExiting(true)
+    setTimeout(() => router.push("/"), 380)
+  }
   const [selectedNode, setSelectedNode] = useState<
     | "subject"
     | "linkedin"
@@ -805,27 +817,23 @@ export default function UserPage() {
   const subject = person ?? buildDefaultPerson(targetName)
 
   return (
-    <div className="relative h-screen overflow-hidden bg-background">
-      {/* Dot grid */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, white 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+    <div
+      className={cn(
+        "relative h-screen overflow-hidden bg-background transition-[opacity,transform] duration-[380ms] ease-in-out",
+        exiting ? "scale-[0.97] opacity-0" : entered ? "opacity-100" : "opacity-0"
+      )}
+    >
 
       {/* Left sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-56 flex-col border-r border-neutral-800 bg-background p-5">
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-56 flex-col border-r border-neutral-200 bg-background p-5 dark:border-neutral-800">
         <div className="mb-6 shrink-0">
-          <Link
-            href="/"
-            className="mb-4 inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase transition-colors hover:text-foreground"
+          <button
+            onClick={handleBack}
+            className="mb-4 inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase transition-colors hover:text-foreground group"
           >
-            <ArrowLeft className="h-3 w-3 shrink-0" />
+            <ArrowLeft className="h-3 w-3 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
             <span>Back to homescreen</span>
-          </Link>
+          </button>
           <span className="block font-mono text-xs tracking-[0.3em] text-neutral-500">
             THEA
           </span>

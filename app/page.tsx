@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,12 @@ export default function Page() {
   const [query, setQuery] = useState("")
   const [searching, setSearching] = useState(false)
   const [recentUsers, setRecentUsers] = useState<readonly DashboardUser[]>([])
+  const [exiting, setExiting] = useState(false)
+
+  const navigateTo = useCallback((href: string) => {
+    setExiting(true)
+    setTimeout(() => router.push(href), 380)
+  }, [router])
 
   useEffect(() => {
     fetch("/api/users")
@@ -43,7 +49,7 @@ export default function Page() {
       const data = await res.json()
 
       if (data.ok) {
-        router.push(`/${data.data.id}`)
+        navigateTo(`/${data.data.id}`)
       }
     } catch {
       setSearching(false)
@@ -51,15 +57,13 @@ export default function Page() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-background">
+    <div
+      className={cn(
+        "relative h-screen overflow-hidden bg-background transition-[opacity,transform] duration-[380ms] ease-in-out",
+        exiting ? "scale-[0.97] opacity-0" : "scale-100 opacity-100"
+      )}
+    >
       {/* Dot grid */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
 
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center px-6 py-5">
@@ -77,11 +81,11 @@ export default function Page() {
           </h1>
 
           <div className="w-full max-w-2xl">
-            <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3.5 transition-colors focus-within:border-neutral-700">
-              <Search className="h-4 w-4 shrink-0 text-neutral-600" />
+            <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm transition-colors focus-within:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none dark:focus-within:border-neutral-700">
+              <Search className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-600" />
               <input
                 autoFocus
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-neutral-600 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-neutral-400 focus:outline-none dark:placeholder:text-neutral-600"
                 placeholder="Enter a full name..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -91,14 +95,14 @@ export default function Page() {
                 onClick={handleSearch}
                 disabled={!query.trim() || searching}
                 aria-label="Search"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all duration-200 disabled:pointer-events-none disabled:opacity-0"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white transition-all duration-200 disabled:pointer-events-none disabled:opacity-0 dark:bg-white dark:text-black"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-neutral-700">
+          <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-600">
             Search across public records, social profiles, and open data
           </p>
 
@@ -111,8 +115,8 @@ export default function Page() {
                 {recentUsers.map((user) => (
                   <button
                     key={user.id}
-                    onClick={() => router.push(`/${user.id}`)}
-                    className="cursor-pointer rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-left transition-colors hover:border-neutral-700"
+                    onClick={() => navigateTo(`/${user.id}`)}
+                    className="cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/40 dark:shadow-none dark:hover:border-neutral-700"
                   >
                     <p className="truncate text-sm text-foreground">{user.name}</p>
                     <p className="mt-1 truncate text-xs text-neutral-600">

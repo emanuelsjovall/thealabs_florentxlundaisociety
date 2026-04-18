@@ -48,9 +48,9 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
+    --background: oklch(0.967 0 0);
     --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
+    --card: oklch(0.99 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
@@ -119,13 +119,36 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    transition-property: color, background-color, border-color, fill, stroke;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
     }
   body {
     @apply bg-background text-foreground;
     }
   html {
     @apply font-sans;
+    font-size: 17px;
     }
+}
+
+/* In light mode, remap washed-out neutral text to near-black */
+html:not(.dark) .text-neutral-200,
+html:not(.dark) .text-neutral-300 { color: oklch(0.18 0 0); }
+html:not(.dark) .text-neutral-400  { color: oklch(0.28 0 0); }
+html:not(.dark) .text-neutral-500  { color: oklch(0.35 0 0); }
+html:not(.dark) .text-neutral-600  { color: oklch(0.42 0 0); }
+html:not(.dark) .text-neutral-700  { color: oklch(0.28 0 0); }
+
+:root {
+  --graph-line: rgba(0,0,0,0.07);
+  --dot-color: rgba(0,0,0,1);
+  --dot-opacity: 0.04;
+}
+.dark {
+  --graph-line: rgba(255,255,255,0.06);
+  --dot-color: rgba(255,255,255,1);
+  --dot-opacity: 0.035;
 }
 
 @keyframes blink {

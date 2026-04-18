@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import { Sun, Moon } from "lucide-react"
 import type { LinkedInProfile } from "@/lib/linkedin"
 import type { StravaProfile } from "@/lib/strava"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
@@ -21,7 +23,7 @@ function LinkedinNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-blue-500">
@@ -71,7 +73,7 @@ function StravaNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-orange-500">
@@ -112,7 +114,7 @@ function CompanyNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-500">
@@ -172,7 +174,7 @@ function NotesNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-amber-400">
@@ -215,7 +217,7 @@ function BreachNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-red-500">
@@ -256,7 +258,7 @@ function XNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-400">
@@ -305,7 +307,7 @@ function GithubNode({
     <div
       onClick={onSelect}
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-60 cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-600"
+      className="w-60 cursor-pointer rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#0b0b0b] dark:shadow-none dark:hover:border-neutral-600"
     >
       <div className="mb-3">
         <span className="font-mono text-[10px] tracking-[0.2em] text-[#3fb950]">
@@ -403,6 +405,7 @@ export function GraphCanvas({
     hasMoved: boolean
   } | null>(null)
   const hasInteracted = useRef(false)
+  const { resolvedTheme, setTheme } = useTheme()
 
   useEffect(() => {
     const t1 = setTimeout(() => setShowLinkedin(true), 600)
@@ -561,7 +564,7 @@ export function GraphCanvas({
             y1="50%"
             x2="30%"
             y2="32%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -574,7 +577,7 @@ export function GraphCanvas({
             y1="50%"
             x2="67%"
             y2="63%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -587,7 +590,7 @@ export function GraphCanvas({
             y1="50%"
             x2="7%"
             y2="44%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -600,7 +603,7 @@ export function GraphCanvas({
             y1="50%"
             x2="76%"
             y2="32%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -613,7 +616,7 @@ export function GraphCanvas({
             y1="50%"
             x2="50%"
             y2="18%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -626,7 +629,7 @@ export function GraphCanvas({
             y1="50%"
             x2="22%"
             y2="88%"
-            stroke="rgba(255,255,255,0.06)"
+            stroke="var(--graph-line)"
             strokeWidth="1"
             strokeDasharray="3 6"
             className={cn(
@@ -640,7 +643,7 @@ export function GraphCanvas({
               y1="65%"
               x2="52%"
               y2="82%"
-              stroke="rgba(255,255,255,0.06)"
+              stroke="var(--graph-line)"
               strokeWidth="1"
               strokeDasharray="3 6"
               className={cn(
@@ -653,7 +656,7 @@ export function GraphCanvas({
 
         {/* Center dot */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="h-1.5 w-1.5 rounded-full bg-white opacity-15" />
+          <div className="h-1.5 w-1.5 rounded-full bg-neutral-900 opacity-15 dark:bg-white" />
         </div>
 
         {/* LinkedIn node */}
@@ -783,20 +786,28 @@ export function GraphCanvas({
       >
         <button
           onClick={zoomOut}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-lg leading-none text-neutral-200 transition-colors hover:bg-neutral-800 hover:text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-lg leading-none text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 hover:text-black dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:shadow-none dark:hover:bg-neutral-800 dark:hover:text-white"
           aria-label="Zoom out"
         >
           −
         </button>
-        <span className="w-12 text-center font-mono text-xs text-neutral-400 tabular-nums select-none">
+        <span className="w-12 text-center font-mono text-xs text-neutral-500 tabular-nums select-none dark:text-neutral-400">
           {Math.round(viewport.scale * 100)}%
         </span>
         <button
           onClick={zoomIn}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 text-lg leading-none text-neutral-200 transition-colors hover:bg-neutral-800 hover:text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-lg leading-none text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 hover:text-black dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:shadow-none dark:hover:bg-neutral-800 dark:hover:text-white"
           aria-label="Zoom in"
         >
           +
+        </button>
+        <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" />
+        <button
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:bg-neutral-50 hover:text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:shadow-none dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          aria-label="Toggle theme"
+        >
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
       </div>
     </div>

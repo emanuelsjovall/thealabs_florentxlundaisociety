@@ -12,30 +12,30 @@ interface Message {
 }
 
 const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
-  h1: ({ children }) => <h1 className="mb-3 mt-4 text-base font-semibold text-neutral-100">{children}</h1>,
-  h2: ({ children }) => <h2 className="mb-2 mt-3 text-sm font-semibold text-neutral-200">{children}</h2>,
-  h3: ({ children }) => <h3 className="mb-1 mt-3 text-sm font-medium text-neutral-200">{children}</h3>,
+  h1: ({ children }) => <h1 className="mb-3 mt-4 text-base font-semibold text-neutral-900 dark:text-neutral-100">{children}</h1>,
+  h2: ({ children }) => <h2 className="mb-2 mt-3 text-sm font-semibold text-neutral-800 dark:text-neutral-200">{children}</h2>,
+  h3: ({ children }) => <h3 className="mb-1 mt-3 text-sm font-medium text-neutral-800 dark:text-neutral-200">{children}</h3>,
   p:  ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
   ul: ({ children }) => <ul className="mb-2 list-disc pl-4 space-y-0.5">{children}</ul>,
   ol: ({ children }) => <ol className="mb-2 list-decimal pl-4 space-y-0.5">{children}</ol>,
   li: ({ children }) => <li>{children}</li>,
-  blockquote: ({ children }) => <blockquote className="mb-2 border-l-2 border-neutral-700 pl-3 text-neutral-400">{children}</blockquote>,
-  hr: () => <hr className="my-3 border-neutral-800" />,
+  blockquote: ({ children }) => <blockquote className="mb-2 border-l-2 border-neutral-300 pl-3 text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">{children}</blockquote>,
+  hr: () => <hr className="my-3 border-neutral-200 dark:border-neutral-800" />,
   pre: ({ children }) => <pre className="mb-2">{children}</pre>,
   code: ({ children, className }) =>
     className?.includes("language-") ? (
-      <code className="block rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 font-mono text-xs text-neutral-200 overflow-x-auto mb-2">{children}</code>
+      <code className="block rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 font-mono text-xs text-neutral-800 overflow-x-auto mb-2 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">{children}</code>
     ) : (
-      <code className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-xs text-neutral-200">{children}</code>
+      <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">{children}</code>
     ),
-  strong: ({ children }) => <strong className="font-semibold text-neutral-100">{children}</strong>,
-  em:     ({ children }) => <em className="italic text-neutral-400">{children}</em>,
+  strong: ({ children }) => <strong className="font-semibold text-neutral-900 dark:text-neutral-100">{children}</strong>,
+  em:     ({ children }) => <em className="italic text-neutral-500 dark:text-neutral-400">{children}</em>,
   a: ({ href, children }) => (
     <a href={href} className="text-blue-400 underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">{children}</a>
   ),
   table: ({ children }) => <div className="mb-2 overflow-x-auto"><table className="w-full border-collapse text-xs">{children}</table></div>,
-  th: ({ children }) => <th className="border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-left font-semibold text-neutral-200">{children}</th>,
-  td: ({ children }) => <td className="border border-neutral-800 px-3 py-1.5 text-neutral-300">{children}</td>,
+  th: ({ children }) => <th className="border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-left font-semibold text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">{children}</th>,
+  td: ({ children }) => <td className="border border-neutral-200 px-3 py-1.5 text-neutral-700 dark:border-neutral-800 dark:text-neutral-300">{children}</td>,
 }
 
 function AssistantMessage({ content, streaming, onUpdate }: { content: string; streaming: boolean; onUpdate?: () => void }) {
@@ -190,7 +190,7 @@ export function ChatPanel({ userId, onActiveChange }: ChatPanelProps) {
 
   return (
     <div
-      className="flex flex-col border-t border-neutral-800 bg-neutral-950 min-h-0"
+      className="relative z-10 flex flex-col bg-white min-h-0 dark:bg-neutral-950"
       style={{
         flexGrow: isOpen ? 1 : 0,
         flexShrink: 0,
@@ -220,12 +220,12 @@ export function ChatPanel({ userId, onActiveChange }: ChatPanelProps) {
                 className={cn(
                   "text-sm leading-relaxed",
                   msg.role === "user"
-                    ? "self-end rounded-xl bg-neutral-800 px-4 py-2.5 text-neutral-100 max-w-[80%]"
-                    : "self-start w-full text-neutral-300"
+                    ? "self-end rounded-xl bg-neutral-100 px-4 py-2.5 text-neutral-900 max-w-[80%] dark:bg-neutral-800 dark:text-neutral-100"
+                    : "self-start w-full text-neutral-700 dark:text-neutral-300"
                 )}
               >
                 {msg.role === "assistant" && (
-                  <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-neutral-500 uppercase">
+                  <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-neutral-400 uppercase dark:text-neutral-500">
                     THEA
                   </span>
                 )}
@@ -246,8 +246,8 @@ export function ChatPanel({ userId, onActiveChange }: ChatPanelProps) {
         </>
       )}
 
-      <div className="flex-shrink-0 flex justify-center px-6 pb-5 pt-4">
-        <div className="flex w-full max-w-[640px] items-center gap-3 rounded-2xl border border-neutral-700/60 bg-neutral-900/60 px-5 py-3.5">
+      <div className="flex-shrink-0 flex justify-center px-6 pb-8 pt-4">
+        <div className="flex w-full max-w-[640px] items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/60 dark:bg-neutral-900/60">
           <input
             type="text"
             value={input}
@@ -264,7 +264,7 @@ export function ChatPanel({ userId, onActiveChange }: ChatPanelProps) {
               "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors",
               input.trim() && !isStreaming
                 ? "bg-neutral-200 text-neutral-900 hover:bg-white"
-                : "bg-neutral-800 text-neutral-600 cursor-not-allowed"
+                : "bg-neutral-200 text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600"
             )}
           >
             <ArrowUp className="h-3.5 w-3.5" />

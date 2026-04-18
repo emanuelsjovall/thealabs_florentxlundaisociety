@@ -35,7 +35,7 @@ import type { TimelineEvent, TimelineCluster } from "@/lib/timeline-types"
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-3">
-      <p className="text-[9px] tracking-[0.22em] text-neutral-700 uppercase">
+      <p className="text-[9px] tracking-[0.22em] text-neutral-400 uppercase dark:text-neutral-600">
         {label}
       </p>
       {children}
@@ -45,7 +45,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-3.5">
+    <div className="rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40 p-3.5">
       {children}
     </div>
   )
@@ -75,6 +75,29 @@ function DetailRow({
   )
 }
 
+const COLLAPSE_THRESHOLD = 220
+
+function ExpandableText({ text, className }: { text: string; className?: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = text.length > COLLAPSE_THRESHOLD
+
+  return (
+    <div>
+      <p className={cn("text-sm leading-relaxed text-foreground", className)}>
+        {isLong && !expanded ? text.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…" : text}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1.5 text-[11px] text-neutral-500 transition-colors hover:text-foreground"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ─── Search Bar ─── */
 
 function SearchBar({
@@ -89,7 +112,7 @@ function SearchBar({
   const [value, setValue] = useState(initialQuery)
 
   return (
-    <div className="mb-4 flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-2">
+    <div className="mb-4 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-3 py-2">
       <Search className="h-3.5 w-3.5 shrink-0 text-neutral-600" />
       <input
         className="flex-1 bg-transparent text-xs text-foreground placeholder:text-neutral-600 focus:outline-none"
@@ -138,7 +161,7 @@ function LinkedInSearchResultsList({
         <button
           key={i}
           onClick={() => onSelect(result)}
-          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-800 dark:hover:bg-neutral-900/60"
         >
           {result.profileImageUrl ? (
             <img
@@ -147,7 +170,7 @@ function LinkedInSearchResultsList({
               className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-800">
               {result.name.charAt(0)}
             </div>
           )}
@@ -207,7 +230,7 @@ function TwitterSearchResultsList({
           key={result.screenName}
           type="button"
           onClick={() => onSelect(result)}
-          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-800 dark:hover:bg-neutral-900/60"
         >
           {result.profileImageUrl ? (
             <img
@@ -216,7 +239,7 @@ function TwitterSearchResultsList({
               className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-800">
               {result.name.charAt(0)}
             </div>
           )}
@@ -272,7 +295,7 @@ function GithubSearchResultsList({
           key={result.login}
           type="button"
           onClick={() => onSelect(result)}
-          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-800 dark:hover:bg-neutral-900/60"
         >
           {result.avatar_url ? (
             <img
@@ -281,7 +304,7 @@ function GithubSearchResultsList({
               className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-800">
               {result.login.charAt(0)}
             </div>
           )}
@@ -331,7 +354,7 @@ function StravaSearchResultsList({
         <button
           key={i}
           onClick={() => onSelect(result)}
-          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
+          className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-800 dark:hover:bg-neutral-900/60"
         >
           {result.profileImageUrl ? (
             <img
@@ -340,7 +363,7 @@ function StravaSearchResultsList({
               className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-800">
               {result.name.charAt(0)}
             </div>
           )}
@@ -381,9 +404,7 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
 
       {profile.about && (
         <Section label="About">
-          <p className="text-sm leading-relaxed text-neutral-400">
-            {profile.about}
-          </p>
+          <ExpandableText text={profile.about} />
         </Section>
       )}
 
@@ -457,7 +478,7 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
             {profile.skills.map((skill) => (
               <span
                 key={skill.name}
-                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
+                className="rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
               >
                 {skill.name}
               </span>
@@ -476,11 +497,7 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
                     Repost
                   </p>
                 )}
-                {post.text && (
-                  <p className="text-sm leading-relaxed text-neutral-300">
-                    {post.text}
-                  </p>
-                )}
+                {post.text && <ExpandableText text={post.text} />}
                 <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-neutral-700">
                   {post.date && <span>{post.date}</span>}
                   {post.likes != null && (
@@ -612,14 +629,14 @@ function NoteEditor({
           onClick={() => {
             void onDelete()
           }}
-          className="rounded p-1 text-neutral-600 transition-colors hover:bg-neutral-800 hover:text-red-400"
+          className="rounded p-1 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-red-500 dark:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-red-400"
           aria-label="Delete note"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
       <textarea
-        className="min-h-[120px] w-full resize-y rounded-md border border-neutral-800 bg-neutral-950/80 px-3 py-2 text-sm leading-relaxed text-neutral-200 placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
+        className="min-h-[120px] w-full resize-y rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed text-neutral-800 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-800 dark:bg-neutral-950/80 dark:text-neutral-200 dark:placeholder:text-neutral-600 dark:focus:border-neutral-600"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => {
@@ -649,7 +666,7 @@ function NotesPanelContent({
       <button
         type="button"
         onClick={() => void onCreateNote()}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900/60 py-2.5 text-xs text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-900"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 py-2.5 text-xs text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-900"
       >
         <Plus className="h-3.5 w-3.5" />
         New note
@@ -704,7 +721,7 @@ function ActivityCard({
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-lg border border-neutral-800 bg-neutral-900/40 p-3.5 text-left transition-colors hover:border-neutral-700 hover:bg-neutral-900/70"
+      className="w-full rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40 p-3.5 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/70"
     >
       <div className="flex items-center gap-2">
         <span className="rounded bg-orange-500/10 px-1.5 py-0.5 text-[10px] text-orange-400">
@@ -762,7 +779,7 @@ function StravaActivityDetailContent({
 
       {detail.mapUrl && (
         <Section label="Route">
-          <div className="overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
+          <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40">
             <img
               src={detail.mapUrl}
               alt={`${detail.title} route map`}
@@ -841,7 +858,7 @@ function StravaActivityDetailContent({
             {detail.achievements.map((a, i) => (
               <div
                 key={i}
-                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1.5 text-[11px] text-neutral-400"
+                className="rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-2.5 py-1.5 text-[11px] text-neutral-400"
               >
                 {a}
               </div>
@@ -977,7 +994,7 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
             {topSports.map(([sport, count]) => (
               <span
                 key={sport}
-                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
+                className="rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
               >
                 {sport} ({count})
               </span>
@@ -1083,9 +1100,7 @@ function KrafmanProfileContent({
 
       {profile.description && (
         <Section label="Description">
-          <p className="text-sm leading-relaxed text-neutral-400">
-            {profile.description}
-          </p>
+          <ExpandableText text={profile.description} />
         </Section>
       )}
 
@@ -1097,7 +1112,7 @@ function KrafmanProfileContent({
                 "rounded-md border px-2.5 py-1 text-[11px]",
                 profile.fTax
                   ? "border-emerald-800/40 text-emerald-400"
-                  : "border-neutral-800 text-neutral-500"
+                  : "border-neutral-200 text-neutral-500 dark:border-neutral-800"
               )}
             >
               F-tax {profile.fTax ? "✓" : "✗"}
@@ -1109,7 +1124,7 @@ function KrafmanProfileContent({
                 "rounded-md border px-2.5 py-1 text-[11px]",
                 profile.vatRegistered
                   ? "border-emerald-800/40 text-emerald-400"
-                  : "border-neutral-800 text-neutral-500"
+                  : "border-neutral-200 text-neutral-500 dark:border-neutral-800"
               )}
             >
               VAT {profile.vatRegistered ? "✓" : "✗"}
@@ -1121,7 +1136,7 @@ function KrafmanProfileContent({
                 "rounded-md border px-2.5 py-1 text-[11px]",
                 profile.employerRegistered
                   ? "border-emerald-800/40 text-emerald-400"
-                  : "border-neutral-800 text-neutral-500"
+                  : "border-neutral-200 text-neutral-500 dark:border-neutral-800"
               )}
             >
               Employer {profile.employerRegistered ? "✓" : "✗"}
@@ -1233,7 +1248,7 @@ function TwitterProfileContent({
         <button
           type="button"
           onClick={onRefresh}
-          className="rounded-lg border border-neutral-700 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-foreground"
+          className="rounded-lg border border-neutral-200 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-neutral-500 transition-colors hover:border-neutral-400 hover:text-foreground dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-500"
         >
           REFRESH
         </button>
@@ -1275,7 +1290,7 @@ function TwitterProfileContent({
             {d.top_topics.map((topic) => (
               <span
                 key={topic}
-                className="rounded-md border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
+                className="rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-2.5 py-1 text-[11px] text-neutral-400"
               >
                 {topic}
               </span>
@@ -1291,9 +1306,7 @@ function TwitterProfileContent({
           <div className="space-y-2">
             {d.recent_tweets.map((tweet) => (
               <Card key={tweet.id}>
-                <p className="text-sm leading-relaxed text-neutral-300">
-                  {tweet.text}
-                </p>
+                <ExpandableText text={tweet.text} />
                 <div className="mt-2.5 flex flex-wrap items-center gap-4 text-[10px] text-neutral-700">
                   <span>{tweet.likes.toLocaleString()} likes</span>
                   <span>{tweet.retweets.toLocaleString()} RT</span>
@@ -2171,7 +2184,7 @@ export function DetailPanel({
     <div
       className={cn(
         "fixed inset-y-0 right-0 z-40 flex w-[420px] flex-col bg-background",
-        "border-l border-neutral-800",
+        "border-l border-neutral-200 dark:border-neutral-800",
         "transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
         open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       )}
@@ -2194,14 +2207,14 @@ export function DetailPanel({
         </span>
         <button
           onClick={onClose}
-          className="rounded-md p-1 text-neutral-600 transition-colors hover:bg-neutral-900 hover:text-neutral-300"
+          className="rounded-md p-1 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-600 dark:hover:bg-neutral-900 dark:hover:text-neutral-300"
           aria-label="Close panel"
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="h-px shrink-0 bg-neutral-800" />
+      <div className="h-px shrink-0 bg-neutral-200 dark:bg-neutral-800" />
 
       <div className="scrollbar-none flex-1 overflow-y-auto px-6 py-7">
         {source === "subject" && <SubjectContent subject={subject} />}
