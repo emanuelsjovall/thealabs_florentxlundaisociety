@@ -16,7 +16,9 @@
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:dump": "tsx scripts/db-dump.ts",
+    "db:load": "tsx scripts/db-load.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
