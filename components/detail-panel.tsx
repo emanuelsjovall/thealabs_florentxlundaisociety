@@ -1,18 +1,29 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { X, Loader2, Search } from "lucide-react"
+import { X, Loader2, Search, MapPin, Mail, Phone, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { LinkedInProfile, LinkedInSearchResult } from "@/lib/linkedin"
-import type { StravaProfile, StravaSearchResult, StravaActivity, StravaActivityDetail } from "@/lib/strava"
-import type { MrkollSearchResult, MrkollProfile, MrkollCompanyEngagement } from "@/lib/mrkoll.types"
-import type { KrafmanCompanyProfile, KrafmanBoardMember } from "@/lib/krafman.types"
-import xData from "@/data/mock/x.json"
+import type {
+  StravaProfile,
+  StravaSearchResult,
+  StravaActivity,
+  StravaActivityDetail,
+} from "@/lib/strava"
+import type {
+  MrkollSearchResult,
+  MrkollProfile,
+  MrkollCompanyEngagement,
+} from "@/lib/mrkoll.types"
+import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
+import type { UserTwitterProfile } from "@/lib/user-record"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-3">
-      <p className="text-[9px] uppercase tracking-[0.22em] text-neutral-700">{label}</p>
+      <p className="text-[9px] tracking-[0.22em] text-neutral-700 uppercase">
+        {label}
+      </p>
       {children}
     </div>
   )
@@ -31,6 +42,21 @@ function LoadingSpinner({ text }: { text: string }) {
     <div className="flex flex-col items-center justify-center gap-3 py-20">
       <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
       <p className="text-xs text-neutral-600">{text}</p>
+    </div>
+  )
+}
+
+function DetailRow({
+  icon: Icon,
+  text,
+}: {
+  icon: typeof MapPin
+  text: string
+}) {
+  return (
+    <div className="flex items-center gap-2.5 text-sm text-neutral-400">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-600" />
+      <span className="truncate">{text}</span>
     </div>
   )
 }
@@ -79,12 +105,19 @@ function LinkedInSearchResultsList({
 }) {
   return (
     <div className="space-y-1">
-      <SearchBar initialQuery={searchQuery} placeholder="Search LinkedIn..." onSearch={onRetry} />
+      <SearchBar
+        initialQuery={searchQuery}
+        placeholder="Search LinkedIn..."
+        onSearch={onRetry}
+      />
       {results.length === 0 ? (
-        <p className="py-12 text-center text-xs text-neutral-600">No matches found</p>
+        <p className="py-12 text-center text-xs text-neutral-600">
+          No matches found
+        </p>
       ) : (
         <p className="mb-4 text-[10px] text-neutral-600">
-          {results.length} potential {results.length === 1 ? "match" : "matches"}
+          {results.length} potential{" "}
+          {results.length === 1 ? "match" : "matches"}
         </p>
       )}
       {results.map((result, i) => (
@@ -94,7 +127,11 @@ function LinkedInSearchResultsList({
           className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
         >
           {result.profileImageUrl ? (
-            <img src={result.profileImageUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+            <img
+              src={result.profileImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
               {result.name.charAt(0)}
@@ -104,11 +141,15 @@ function LinkedInSearchResultsList({
             <div className="flex items-center gap-2">
               <p className="truncate text-sm text-foreground">{result.name}</p>
               {result.connectionDegree && (
-                <span className="shrink-0 text-[10px] text-neutral-600">· {result.connectionDegree}</span>
+                <span className="shrink-0 text-[10px] text-neutral-600">
+                  · {result.connectionDegree}
+                </span>
               )}
             </div>
             {result.headline && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">{result.headline}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
+                {result.headline}
+              </p>
             )}
           </div>
         </button>
@@ -132,12 +173,19 @@ function StravaSearchResultsList({
 }) {
   return (
     <div className="space-y-1">
-      <SearchBar initialQuery={searchQuery} placeholder="Search Strava..." onSearch={onRetry} />
+      <SearchBar
+        initialQuery={searchQuery}
+        placeholder="Search Strava..."
+        onSearch={onRetry}
+      />
       {results.length === 0 ? (
-        <p className="py-12 text-center text-xs text-neutral-600">No athletes found</p>
+        <p className="py-12 text-center text-xs text-neutral-600">
+          No athletes found
+        </p>
       ) : (
         <p className="mb-4 text-[10px] text-neutral-600">
-          {results.length} potential {results.length === 1 ? "match" : "matches"}
+          {results.length} potential{" "}
+          {results.length === 1 ? "match" : "matches"}
         </p>
       )}
       {results.map((result, i) => (
@@ -147,7 +195,11 @@ function StravaSearchResultsList({
           className="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-colors hover:border-neutral-800 hover:bg-neutral-900/60"
         >
           {result.profileImageUrl ? (
-            <img src={result.profileImageUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+            <img
+              src={result.profileImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs text-neutral-500">
               {result.name.charAt(0)}
@@ -156,7 +208,9 @@ function StravaSearchResultsList({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-foreground">{result.name}</p>
             {result.location && (
-              <p className="mt-0.5 text-xs text-neutral-500">{result.location}</p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                {result.location}
+              </p>
             )}
           </div>
         </button>
@@ -175,28 +229,42 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
       <div>
         <h3 className="text-xl font-light text-foreground">{profile.name}</h3>
         {profile.headline && (
-          <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">{profile.headline}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
+            {profile.headline}
+          </p>
         )}
         {profile.location && (
-          <p className="mt-2.5 text-[11px] text-neutral-600">{profile.location}</p>
+          <p className="mt-2.5 text-[11px] text-neutral-600">
+            {profile.location}
+          </p>
         )}
       </div>
 
       {profile.about && (
         <Section label="About">
-          <p className="text-sm leading-relaxed text-neutral-400">{profile.about}</p>
+          <p className="text-sm leading-relaxed text-neutral-400">
+            {profile.about}
+          </p>
         </Section>
       )}
 
       {currentExp && (
         <Section label="Current Position">
           <Card>
-            <p className="text-sm text-foreground">{currentExp.positionTitle}</p>
+            <p className="text-sm text-foreground">
+              {currentExp.positionTitle}
+            </p>
             {currentExp.companyName && (
-              <p className="mt-1 text-xs text-neutral-500">{currentExp.companyName}</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                {currentExp.companyName}
+              </p>
             )}
             <p className="mt-0.5 text-[11px] text-neutral-700">
-              {[currentExp.location, currentExp.fromDate && `${currentExp.fromDate} – ${currentExp.toDate ?? "present"}`]
+              {[
+                currentExp.location,
+                currentExp.fromDate &&
+                  `${currentExp.fromDate} – ${currentExp.toDate ?? "present"}`,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -211,7 +279,9 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
               <Card key={i}>
                 <p className="text-sm text-foreground">{exp.positionTitle}</p>
                 {exp.companyName && (
-                  <p className="mt-1 text-xs text-neutral-500">{exp.companyName}</p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {exp.companyName}
+                  </p>
                 )}
                 <p className="mt-0.5 text-[11px] text-neutral-700">
                   {[exp.location, exp.duration].filter(Boolean).join(" · ")}
@@ -263,14 +333,116 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
             {profile.posts.map((post, i) => (
               <Card key={i}>
                 {post.text && (
-                  <p className="text-sm leading-relaxed text-neutral-300">{post.text}</p>
+                  <p className="text-sm leading-relaxed text-neutral-300">
+                    {post.text}
+                  </p>
                 )}
                 <div className="mt-2.5 flex items-center gap-4 text-[10px] text-neutral-700">
                   {post.date && <span>{post.date}</span>}
-                  {post.likes != null && <span>{post.likes.toLocaleString()} likes</span>}
-                  {post.comments != null && <span>{post.comments.toLocaleString()} comments</span>}
-                  {post.reposts != null && <span>{post.reposts.toLocaleString()} reposts</span>}
+                  {post.likes != null && (
+                    <span>{post.likes.toLocaleString()} likes</span>
+                  )}
+                  {post.comments != null && (
+                    <span>{post.comments.toLocaleString()} comments</span>
+                  )}
+                  {post.reposts != null && (
+                    <span>{post.reposts.toLocaleString()} reposts</span>
+                  )}
                 </div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
+  )
+}
+
+interface SubjectPanelData {
+  readonly name: string
+  readonly email: string
+  readonly phone: string
+  readonly website: string
+  readonly city: string
+  readonly state: string
+  readonly country?: string
+  readonly updatedAt: string | null
+  readonly linkedinProfile: LinkedInProfile | null
+  readonly stravaProfile: StravaProfile | null
+  readonly mrkollProfile: MrkollProfile | null
+}
+
+function SubjectContent({ subject }: { subject: SubjectPanelData }) {
+  const location = [subject.city, subject.state, subject.country]
+    .filter(Boolean)
+    .join(", ")
+  const sourceCards = [
+    subject.linkedinProfile
+      ? {
+          label: "LinkedIn",
+          value: subject.linkedinProfile.headline ?? "Profile loaded",
+        }
+      : null,
+    subject.stravaProfile
+      ? {
+          label: "Strava",
+          value: `${subject.stravaProfile.totalActivities} activities`,
+        }
+      : null,
+    subject.mrkollProfile
+      ? {
+          label: "Mrkoll",
+          value:
+            [
+              subject.mrkollProfile.age != null
+                ? `${subject.mrkollProfile.age} years old`
+                : null,
+              subject.mrkollProfile.companies.length > 0
+                ? `${subject.mrkollProfile.companies.length} company engagements`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "Profile loaded",
+        }
+      : null,
+  ].filter(Boolean) as { label: string; value: string }[]
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-xl font-light text-foreground">{subject.name}</h3>
+        {location && (
+          <p className="mt-2.5 text-[11px] text-neutral-600">{location}</p>
+        )}
+        {subject.updatedAt && (
+          <p className="mt-1 text-[11px] text-neutral-700">
+            Updated {new Date(subject.updatedAt).toLocaleString()}
+          </p>
+        )}
+      </div>
+
+      <Section label="Contact">
+        <div className="space-y-3">
+          <Card>
+            <div className="space-y-2.5">
+              <DetailRow icon={Mail} text={subject.email} />
+              <DetailRow icon={Phone} text={subject.phone} />
+              <DetailRow icon={Globe} text={subject.website} />
+              {location && <DetailRow icon={MapPin} text={location} />}
+            </div>
+          </Card>
+        </div>
+      </Section>
+
+      {sourceCards.length > 0 && (
+        <Section label="Collected Data">
+          <div className="space-y-2">
+            {sourceCards.map((item) => (
+              <Card key={item.label}>
+                <p className="text-sm text-foreground">{item.label}</p>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                  {item.value}
+                </p>
               </Card>
             ))}
           </div>
@@ -380,7 +552,9 @@ function StravaActivityDetailContent({
           )}
           {detail.pace && (
             <Card>
-              <p className="text-base font-light text-foreground">{detail.pace}</p>
+              <p className="text-base font-light text-foreground">
+                {detail.pace}
+              </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Pace</p>
             </Card>
           )}
@@ -394,7 +568,9 @@ function StravaActivityDetailContent({
           )}
           {detail.calories != null && detail.calories > 0 && (
             <Card>
-              <p className="text-base font-light text-foreground">{detail.calories}</p>
+              <p className="text-base font-light text-foreground">
+                {detail.calories}
+              </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Calories</p>
             </Card>
           )}
@@ -403,7 +579,9 @@ function StravaActivityDetailContent({
               <p className="text-base font-light text-foreground">
                 {formatDuration(detail.elapsedTimeSeconds)}
               </p>
-              <p className="mt-0.5 text-[10px] text-neutral-600">Elapsed Time</p>
+              <p className="mt-0.5 text-[10px] text-neutral-600">
+                Elapsed Time
+              </p>
             </Card>
           )}
         </div>
@@ -411,7 +589,9 @@ function StravaActivityDetailContent({
 
       {detail.description && (
         <Section label="Description">
-          <p className="text-xs leading-relaxed text-neutral-400">{detail.description}</p>
+          <p className="text-xs leading-relaxed text-neutral-400">
+            {detail.description}
+          </p>
         </Section>
       )}
 
@@ -456,7 +636,9 @@ type StravaDetailState =
   | { status: "error"; message: string }
 
 function StravaProfileContent({ profile }: { profile: StravaProfile }) {
-  const [detailState, setDetailState] = useState<StravaDetailState>({ status: "idle" })
+  const [detailState, setDetailState] = useState<StravaDetailState>({
+    status: "idle",
+  })
 
   const sportCounts = new Map<string, number>()
   for (const a of profile.activities) {
@@ -509,7 +691,9 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
         >
           &larr; Back to profile
         </button>
-        <p className="py-12 text-center text-xs text-red-400">{detailState.message}</p>
+        <p className="py-12 text-center text-xs text-red-400">
+          {detailState.message}
+        </p>
       </div>
     )
   }
@@ -526,11 +710,15 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
       <Section label="Stats">
         <div className="grid grid-cols-2 gap-2">
           <Card>
-            <p className="text-base font-light text-foreground">{profile.totalActivities}</p>
+            <p className="text-base font-light text-foreground">
+              {profile.totalActivities}
+            </p>
             <p className="mt-0.5 text-[10px] text-neutral-600">Activities</p>
           </Card>
           <Card>
-            <p className="text-base font-light text-foreground">{sportCounts.size}</p>
+            <p className="text-base font-light text-foreground">
+              {sportCounts.size}
+            </p>
             <p className="mt-0.5 text-[10px] text-neutral-600">Sport types</p>
           </Card>
         </div>
@@ -583,12 +771,19 @@ function MrkollSearchResultsList({
 }) {
   return (
     <div className="space-y-1">
-      <SearchBar initialQuery={searchQuery} placeholder="Search Mrkoll..." onSearch={onRetry} />
+      <SearchBar
+        initialQuery={searchQuery}
+        placeholder="Search Mrkoll..."
+        onSearch={onRetry}
+      />
       {results.length === 0 ? (
-        <p className="py-12 text-center text-xs text-neutral-600">No results found</p>
+        <p className="py-12 text-center text-xs text-neutral-600">
+          No results found
+        </p>
       ) : (
         <p className="mb-4 text-[10px] text-neutral-600">
-          {results.length} potential {results.length === 1 ? "match" : "matches"}
+          {results.length} potential{" "}
+          {results.length === 1 ? "match" : "matches"}
         </p>
       )}
       {results.map((result, i) => (
@@ -604,11 +799,15 @@ function MrkollSearchResultsList({
             <div className="flex items-center gap-2">
               <p className="truncate text-sm text-foreground">{result.name}</p>
               {result.age != null && (
-                <span className="shrink-0 text-[10px] text-neutral-600">· {result.age} yr</span>
+                <span className="shrink-0 text-[10px] text-neutral-600">
+                  · {result.age} yr
+                </span>
               )}
             </div>
             {result.address && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">{result.address}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
+                {result.address}
+              </p>
             )}
             {result.extraInfo.length > 0 && (
               <p className="mt-0.5 line-clamp-1 text-xs text-neutral-600">
@@ -636,20 +835,26 @@ function MrkollProfileContent({
       <div>
         <h3 className="text-xl font-light text-foreground">{profile.name}</h3>
         {profile.age != null && (
-          <p className="mt-1.5 text-sm text-neutral-400">{profile.age} years old</p>
+          <p className="mt-1.5 text-sm text-neutral-400">
+            {profile.age} years old
+          </p>
         )}
         {profile.address && (
           <p className="mt-1 text-[11px] text-neutral-600">{profile.address}</p>
         )}
         {profile.location && (
-          <p className="mt-0.5 text-[11px] text-neutral-600">{profile.location}</p>
+          <p className="mt-0.5 text-[11px] text-neutral-600">
+            {profile.location}
+          </p>
         )}
       </div>
 
       {profile.personnummer && (
         <Section label="Personnummer">
           <Card>
-            <p className="font-mono text-sm text-foreground">{profile.personnummer}</p>
+            <p className="font-mono text-sm text-foreground">
+              {profile.personnummer}
+            </p>
           </Card>
         </Section>
       )}
@@ -677,16 +882,24 @@ function MrkollProfileContent({
               >
                 <p className="text-sm text-foreground">{company.companyName}</p>
                 {company.orgNumber && (
-                  <p className="mt-0.5 font-mono text-[11px] text-neutral-600">{company.orgNumber}</p>
+                  <p className="mt-0.5 font-mono text-[11px] text-neutral-600">
+                    {company.orgNumber}
+                  </p>
                 )}
                 {company.roles.length > 0 && (
-                  <p className="mt-1 text-xs text-neutral-500">{company.roles.join(", ")}</p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {company.roles.join(", ")}
+                  </p>
                 )}
                 {company.registrationYear && (
-                  <p className="mt-0.5 text-[10px] text-neutral-700">Reg. {company.registrationYear}</p>
+                  <p className="mt-0.5 text-[10px] text-neutral-700">
+                    Reg. {company.registrationYear}
+                  </p>
                 )}
                 {company.krafmanUrl && (
-                  <p className="mt-1.5 text-[10px] text-emerald-600">View company details →</p>
+                  <p className="mt-1.5 text-[10px] text-emerald-600">
+                    View company details →
+                  </p>
                 )}
               </button>
             ))}
@@ -701,7 +914,9 @@ function MrkollProfileContent({
               <Card key={i}>
                 <p className="text-sm text-foreground">{member.name}</p>
                 {member.age != null && (
-                  <p className="mt-0.5 text-[11px] text-neutral-600">{member.age} years old</p>
+                  <p className="mt-0.5 text-[11px] text-neutral-600">
+                    {member.age} years old
+                  </p>
                 )}
               </Card>
             ))}
@@ -712,7 +927,9 @@ function MrkollProfileContent({
       {profile.propertyInfo && (
         <Section label="Property">
           <Card>
-            <p className="text-xs leading-relaxed text-neutral-400">{profile.propertyInfo}</p>
+            <p className="text-xs leading-relaxed text-neutral-400">
+              {profile.propertyInfo}
+            </p>
           </Card>
         </Section>
       )}
@@ -722,21 +939,31 @@ function MrkollProfileContent({
 
 /* ─── Krafman Company Content ─── */
 
-function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) {
+function KrafmanProfileContent({
+  profile,
+}: {
+  profile: KrafmanCompanyProfile
+}) {
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-xl font-light text-foreground">{profile.companyName}</h3>
+        <h3 className="text-xl font-light text-foreground">
+          {profile.companyName}
+        </h3>
         {profile.orgNumber && (
-          <p className="mt-1.5 font-mono text-sm text-neutral-400">{profile.orgNumber}</p>
+          <p className="mt-1.5 font-mono text-sm text-neutral-400">
+            {profile.orgNumber}
+          </p>
         )}
         {profile.status && (
-          <span className={cn(
-            "mt-2 inline-block rounded px-2 py-0.5 text-[10px]",
-            profile.status.toLowerCase() === "aktiv"
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-red-500/10 text-red-400"
-          )}>
+          <span
+            className={cn(
+              "mt-2 inline-block rounded px-2 py-0.5 text-[10px]",
+              profile.status.toLowerCase() === "aktiv"
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "bg-red-500/10 text-red-400"
+            )}
+          >
             {profile.status}
           </span>
         )}
@@ -752,14 +979,18 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
           )}
           {profile.registrationYear && (
             <Card>
-              <p className="text-xs text-foreground">{profile.registrationYear}</p>
+              <p className="text-xs text-foreground">
+                {profile.registrationYear}
+              </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Registered</p>
             </Card>
           )}
           {profile.shareCapital && (
             <Card>
               <p className="text-xs text-foreground">{profile.shareCapital}</p>
-              <p className="mt-0.5 text-[10px] text-neutral-600">Share capital</p>
+              <p className="mt-0.5 text-[10px] text-neutral-600">
+                Share capital
+              </p>
             </Card>
           )}
           {profile.industry && (
@@ -776,7 +1007,9 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
           <Card>
             <p className="text-sm text-foreground">{profile.address}</p>
             {profile.location && (
-              <p className="mt-0.5 text-[11px] text-neutral-600">{profile.location}</p>
+              <p className="mt-0.5 text-[11px] text-neutral-600">
+                {profile.location}
+              </p>
             )}
           </Card>
         </Section>
@@ -784,39 +1017,47 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
 
       {profile.description && (
         <Section label="Description">
-          <p className="text-sm leading-relaxed text-neutral-400">{profile.description}</p>
+          <p className="text-sm leading-relaxed text-neutral-400">
+            {profile.description}
+          </p>
         </Section>
       )}
 
       <Section label="Registrations">
         <div className="flex flex-wrap gap-1.5">
           {profile.fTax != null && (
-            <span className={cn(
-              "rounded-md border px-2.5 py-1 text-[11px]",
-              profile.fTax
-                ? "border-emerald-800/40 text-emerald-400"
-                : "border-neutral-800 text-neutral-500"
-            )}>
+            <span
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-[11px]",
+                profile.fTax
+                  ? "border-emerald-800/40 text-emerald-400"
+                  : "border-neutral-800 text-neutral-500"
+              )}
+            >
               F-tax {profile.fTax ? "✓" : "✗"}
             </span>
           )}
           {profile.vatRegistered != null && (
-            <span className={cn(
-              "rounded-md border px-2.5 py-1 text-[11px]",
-              profile.vatRegistered
-                ? "border-emerald-800/40 text-emerald-400"
-                : "border-neutral-800 text-neutral-500"
-            )}>
+            <span
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-[11px]",
+                profile.vatRegistered
+                  ? "border-emerald-800/40 text-emerald-400"
+                  : "border-neutral-800 text-neutral-500"
+              )}
+            >
               VAT {profile.vatRegistered ? "✓" : "✗"}
             </span>
           )}
           {profile.employerRegistered != null && (
-            <span className={cn(
-              "rounded-md border px-2.5 py-1 text-[11px]",
-              profile.employerRegistered
-                ? "border-emerald-800/40 text-emerald-400"
-                : "border-neutral-800 text-neutral-500"
-            )}>
+            <span
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-[11px]",
+                profile.employerRegistered
+                  ? "border-emerald-800/40 text-emerald-400"
+                  : "border-neutral-800 text-neutral-500"
+              )}
+            >
               Employer {profile.employerRegistered ? "✓" : "✗"}
             </span>
           )}
@@ -831,7 +1072,9 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-foreground">{member.name}</p>
                   {member.age != null && (
-                    <span className="text-[10px] text-neutral-600">{member.age} yr</span>
+                    <span className="text-[10px] text-neutral-600">
+                      {member.age} yr
+                    </span>
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-neutral-500">{member.role}</p>
@@ -851,20 +1094,32 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
           <div className="space-y-2">
             {profile.debt.generalDebt && (
               <Card>
-                <p className="text-sm text-foreground">{profile.debt.generalDebt}</p>
-                <p className="mt-0.5 text-[10px] text-neutral-600">General debt</p>
+                <p className="text-sm text-foreground">
+                  {profile.debt.generalDebt}
+                </p>
+                <p className="mt-0.5 text-[10px] text-neutral-600">
+                  General debt
+                </p>
               </Card>
             )}
             {profile.debt.individualDebt && (
               <Card>
-                <p className="text-sm text-foreground">{profile.debt.individualDebt}</p>
-                <p className="mt-0.5 text-[10px] text-neutral-600">Individual debt</p>
+                <p className="text-sm text-foreground">
+                  {profile.debt.individualDebt}
+                </p>
+                <p className="mt-0.5 text-[10px] text-neutral-600">
+                  Individual debt
+                </p>
               </Card>
             )}
             {profile.debt.paymentRemarks != null && (
               <Card>
-                <p className="text-sm text-foreground">{profile.debt.paymentRemarks}</p>
-                <p className="mt-0.5 text-[10px] text-neutral-600">Payment remarks</p>
+                <p className="text-sm text-foreground">
+                  {profile.debt.paymentRemarks}
+                </p>
+                <p className="mt-0.5 text-[10px] text-neutral-600">
+                  Payment remarks
+                </p>
               </Card>
             )}
           </div>
@@ -876,8 +1131,19 @@ function KrafmanProfileContent({ profile }: { profile: KrafmanCompanyProfile }) 
 
 /* ─── X/Twitter Content ─── */
 
-function XContent() {
-  const d = xData.profile
+function XContent({ profile }: { profile: UserTwitterProfile | null }) {
+  const d = profile
+
+  if (!d) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-sm text-neutral-400">No saved profile</p>
+        <p className="mt-2 text-xs text-neutral-600">
+          Twitter data has not been stored for this user yet.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -886,7 +1152,11 @@ function XContent() {
         <p className="mt-1 text-sm text-neutral-400">{d.name}</p>
         <p className="mt-2 text-sm leading-relaxed text-neutral-500">{d.bio}</p>
         <p className="mt-2.5 text-[11px] text-neutral-600">
-          {d.location} · {d.website} · joined {new Date(d.joined).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          {d.location} · {d.website} · joined{" "}
+          {new Date(d.joined).toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })}
         </p>
       </div>
 
@@ -923,7 +1193,9 @@ function XContent() {
         <div className="space-y-2">
           {d.recent_tweets.map((tweet) => (
             <Card key={tweet.id}>
-              <p className="text-sm leading-relaxed text-neutral-300">{tweet.text}</p>
+              <p className="text-sm leading-relaxed text-neutral-300">
+                {tweet.text}
+              </p>
               <div className="mt-2.5 flex items-center gap-4 text-[10px] text-neutral-700">
                 <span>{tweet.likes.toLocaleString()} likes</span>
                 <span>{tweet.retweets.toLocaleString()} RT</span>
@@ -942,21 +1214,33 @@ function XContent() {
 
 export type LinkedInPanelState =
   | { status: "searching" }
-  | { status: "search-results"; results: readonly LinkedInSearchResult[]; query: string }
+  | {
+      status: "search-results"
+      results: readonly LinkedInSearchResult[]
+      query: string
+    }
   | { status: "scraping"; name: string }
   | { status: "profile"; profile: LinkedInProfile }
   | { status: "error"; message: string }
 
 export type StravaPanelState =
   | { status: "searching" }
-  | { status: "search-results"; results: readonly StravaSearchResult[]; query: string }
+  | {
+      status: "search-results"
+      results: readonly StravaSearchResult[]
+      query: string
+    }
   | { status: "scraping"; name: string }
   | { status: "profile"; profile: StravaProfile }
   | { status: "error"; message: string }
 
 export type MrkollPanelState =
   | { status: "searching" }
-  | { status: "search-results"; results: readonly MrkollSearchResult[]; query: string }
+  | {
+      status: "search-results"
+      results: readonly MrkollSearchResult[]
+      query: string
+    }
   | { status: "scraping"; name: string }
   | { status: "profile"; profile: MrkollProfile }
   | { status: "error"; message: string }
@@ -969,8 +1253,9 @@ export type KrafmanPanelState =
 /* ─── Detail Panel ─── */
 
 interface DetailPanelProps {
-  source: "linkedin" | "x" | "strava" | "mrkoll" | "company" | null
+  source: "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | null
   onClose: () => void
+  subject: SubjectPanelData
   linkedinState: LinkedInPanelState | null
   onSelectLinkedInResult: (result: LinkedInSearchResult) => void
   onRetryLinkedInSearch: (query: string) => void
@@ -982,11 +1267,13 @@ interface DetailPanelProps {
   onRetryMrkollSearch: (query: string) => void
   onOpenCompany: (company: MrkollCompanyEngagement) => void
   krafmanState: KrafmanPanelState | null
+  twitterProfile: UserTwitterProfile | null
 }
 
 export function DetailPanel({
   source,
   onClose,
+  subject,
   linkedinState,
   onSelectLinkedInResult,
   onRetryLinkedInSearch,
@@ -998,6 +1285,7 @@ export function DetailPanel({
   onRetryMrkollSearch,
   onOpenCompany,
   krafmanState,
+  twitterProfile,
 }: DetailPanelProps) {
   const open = source !== null
 
@@ -1007,13 +1295,24 @@ export function DetailPanel({
       case "searching":
         return <LoadingSpinner text="Searching LinkedIn..." />
       case "search-results":
-        return <LinkedInSearchResultsList results={linkedinState.results} searchQuery={linkedinState.query} onSelect={onSelectLinkedInResult} onRetry={onRetryLinkedInSearch} />
+        return (
+          <LinkedInSearchResultsList
+            results={linkedinState.results}
+            searchQuery={linkedinState.query}
+            onSelect={onSelectLinkedInResult}
+            onRetry={onRetryLinkedInSearch}
+          />
+        )
       case "scraping":
         return <LoadingSpinner text={`Scraping ${linkedinState.name}...`} />
       case "profile":
         return <LinkedinProfileContent profile={linkedinState.profile} />
       case "error":
-        return <p className="py-12 text-center text-xs text-red-400">{linkedinState.message}</p>
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {linkedinState.message}
+          </p>
+        )
     }
   }
 
@@ -1023,13 +1322,24 @@ export function DetailPanel({
       case "searching":
         return <LoadingSpinner text="Searching Strava..." />
       case "search-results":
-        return <StravaSearchResultsList results={stravaState.results} searchQuery={stravaState.query} onSelect={onSelectStravaResult} onRetry={onRetryStravaSearch} />
+        return (
+          <StravaSearchResultsList
+            results={stravaState.results}
+            searchQuery={stravaState.query}
+            onSelect={onSelectStravaResult}
+            onRetry={onRetryStravaSearch}
+          />
+        )
       case "scraping":
         return <LoadingSpinner text={`Loading ${stravaState.name}...`} />
       case "profile":
         return <StravaProfileContent profile={stravaState.profile} />
       case "error":
-        return <p className="py-12 text-center text-xs text-red-400">{stravaState.message}</p>
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {stravaState.message}
+          </p>
+        )
     }
   }
 
@@ -1039,13 +1349,29 @@ export function DetailPanel({
       case "searching":
         return <LoadingSpinner text="Searching Mrkoll..." />
       case "search-results":
-        return <MrkollSearchResultsList results={mrkollState.results} searchQuery={mrkollState.query} onSelect={onSelectMrkollResult} onRetry={onRetryMrkollSearch} />
+        return (
+          <MrkollSearchResultsList
+            results={mrkollState.results}
+            searchQuery={mrkollState.query}
+            onSelect={onSelectMrkollResult}
+            onRetry={onRetryMrkollSearch}
+          />
+        )
       case "scraping":
         return <LoadingSpinner text={`Loading ${mrkollState.name}...`} />
       case "profile":
-        return <MrkollProfileContent profile={mrkollState.profile} onOpenCompany={onOpenCompany} />
+        return (
+          <MrkollProfileContent
+            profile={mrkollState.profile}
+            onOpenCompany={onOpenCompany}
+          />
+        )
       case "error":
-        return <p className="py-12 text-center text-xs text-red-400">{mrkollState.message}</p>
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {mrkollState.message}
+          </p>
+        )
     }
   }
 
@@ -1053,24 +1379,38 @@ export function DetailPanel({
     if (!krafmanState) return null
     switch (krafmanState.status) {
       case "scraping":
-        return <LoadingSpinner text={`Loading ${krafmanState.companyName}...`} />
+        return (
+          <LoadingSpinner text={`Loading ${krafmanState.companyName}...`} />
+        )
       case "profile":
         return <KrafmanProfileContent profile={krafmanState.profile} />
       case "error":
-        return <p className="py-12 text-center text-xs text-red-400">{krafmanState.message}</p>
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {krafmanState.message}
+          </p>
+        )
     }
   }
 
   function getPanelTitle(): string {
     switch (source) {
+      case "subject":
+        return "SUBJECT"
       case "linkedin":
-        return linkedinState?.status === "search-results" ? "LINKEDIN — SELECT PROFILE" : "LINKEDIN"
+        return linkedinState?.status === "search-results"
+          ? "LINKEDIN — SELECT PROFILE"
+          : "LINKEDIN"
       case "strava":
-        return stravaState?.status === "search-results" ? "STRAVA — SELECT ATHLETE" : "STRAVA"
+        return stravaState?.status === "search-results"
+          ? "STRAVA — SELECT ATHLETE"
+          : "STRAVA"
       case "x":
         return "X / TWITTER"
       case "mrkoll":
-        return mrkollState?.status === "search-results" ? "MRKOLL — SELECT PERSON" : "MRKOLL"
+        return mrkollState?.status === "search-results"
+          ? "MRKOLL — SELECT PERSON"
+          : "MRKOLL"
       case "company":
         return "COMPANY"
       default:
@@ -1080,21 +1420,35 @@ export function DetailPanel({
 
   function getAccentColor(): string {
     switch (source) {
-      case "linkedin": return "bg-blue-600/40"
-      case "strava": return "bg-orange-500/40"
-      case "mrkoll": return "bg-purple-600/40"
-      case "company": return "bg-emerald-600/40"
-      default: return "bg-neutral-700/60"
+      case "subject":
+        return "bg-neutral-500/40"
+      case "linkedin":
+        return "bg-blue-600/40"
+      case "strava":
+        return "bg-orange-500/40"
+      case "mrkoll":
+        return "bg-purple-600/40"
+      case "company":
+        return "bg-emerald-600/40"
+      default:
+        return "bg-neutral-700/60"
     }
   }
 
   function getLabelColor(): string {
     switch (source) {
-      case "linkedin": return "text-blue-500"
-      case "strava": return "text-orange-500"
-      case "mrkoll": return "text-purple-500"
-      case "company": return "text-emerald-500"
-      default: return "text-neutral-400"
+      case "subject":
+        return "text-neutral-300"
+      case "linkedin":
+        return "text-blue-500"
+      case "strava":
+        return "text-orange-500"
+      case "mrkoll":
+        return "text-purple-500"
+      case "company":
+        return "text-emerald-500"
+      default:
+        return "text-neutral-400"
     }
   }
 
@@ -1107,10 +1461,20 @@ export function DetailPanel({
         open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       )}
     >
-      <div className={cn("h-[2px] w-full shrink-0 transition-colors duration-300", getAccentColor())} />
+      <div
+        className={cn(
+          "h-[2px] w-full shrink-0 transition-colors duration-300",
+          getAccentColor()
+        )}
+      />
 
       <div className="flex shrink-0 items-center justify-between px-6 py-5">
-        <span className={cn("font-mono text-[9px] tracking-[0.25em]", getLabelColor())}>
+        <span
+          className={cn(
+            "font-mono text-[9px] tracking-[0.25em]",
+            getLabelColor()
+          )}
+        >
           {getPanelTitle()}
         </span>
         <button
@@ -1122,12 +1486,13 @@ export function DetailPanel({
         </button>
       </div>
 
-      <div className="h-px bg-neutral-800 shrink-0" />
+      <div className="h-px shrink-0 bg-neutral-800" />
 
-      <div className="flex-1 overflow-y-auto px-6 py-7 scrollbar-none">
+      <div className="scrollbar-none flex-1 overflow-y-auto px-6 py-7">
+        {source === "subject" && <SubjectContent subject={subject} />}
         {source === "linkedin" && renderLinkedinContent()}
         {source === "strava" && renderStravaContent()}
-        {source === "x" && <XContent />}
+        {source === "x" && <XContent profile={twitterProfile} />}
         {source === "mrkoll" && renderMrkollContent()}
         {source === "company" && renderKrafmanContent()}
       </div>

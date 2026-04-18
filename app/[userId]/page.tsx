@@ -1,18 +1,48 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useCallback, useEffect, type ElementType } from "react"
 import { useParams } from "next/navigation"
-import { MapPin, Mail, Phone, Globe, ChevronDown, ChevronUp } from "lucide-react"
+import {
+  MapPin,
+  Mail,
+  Phone,
+  Globe,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+} from "lucide-react"
 import { GraphCanvas } from "@/components/graph-canvas"
 import { DetailPanel } from "@/components/detail-panel"
-import type { LinkedInPanelState, StravaPanelState, MrkollPanelState, KrafmanPanelState } from "@/components/detail-panel"
+import type {
+  LinkedInPanelState,
+  StravaPanelState,
+  MrkollPanelState,
+  KrafmanPanelState,
+} from "@/components/detail-panel"
 import { cn } from "@/lib/utils"
-import type { LinkedInSearchResult, LinkedInProfile } from "@/lib/linkedin"
+import type { LinkedInSearchResult } from "@/lib/linkedin"
 import type { StravaSearchResult } from "@/lib/strava"
-import type { MrkollSearchResult, MrkollCompanyEngagement } from "@/lib/mrkoll.types"
-import personData from "@/data/mock/person.json"
+import type {
+  MrkollSearchResult,
+  MrkollCompanyEngagement,
+} from "@/lib/mrkoll.types"
+import {
+  buildDefaultPerson,
+  buildDefaultTwitter,
+  type UserPerson,
+  type UserRecordData,
+  type UserRecordPatch,
+  type UserTwitterProfile,
+} from "@/lib/user-record"
 
-function ContactRow({ icon: Icon, text }: { readonly icon: ElementType; readonly text: string }) {
+function ContactRow({
+  icon: Icon,
+  text,
+}: {
+  readonly icon: ElementType
+  readonly text: string
+}) {
   return (
     <div className="flex items-center gap-2">
       <Icon className="h-3 w-3 shrink-0 text-neutral-700" />
@@ -22,48 +52,61 @@ function ContactRow({ icon: Icon, text }: { readonly icon: ElementType; readonly
 }
 
 interface PersonNodeProps {
-  readonly name: string
+  readonly person: UserPerson
   readonly expanded: boolean
+  readonly onSelect: () => void
   readonly onToggle: () => void
 }
 
-function PersonNode({ name, expanded, onToggle }: PersonNodeProps) {
+function PersonNode({ person, expanded, onSelect, onToggle }: PersonNodeProps) {
   return (
-    <div
-      onClick={onToggle}
-      className="cursor-pointer rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-700"
-    >
+    <div className="rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-700">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-600">SUBJECT</span>
-        {expanded
-          ? <ChevronUp className="h-3 w-3 text-neutral-700" />
-          : <ChevronDown className="h-3 w-3 text-neutral-700" />
-        }
+        <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-600">
+          SUBJECT
+        </span>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="rounded p-0.5 text-neutral-700 transition-colors hover:bg-neutral-900 hover:text-neutral-500"
+          aria-label={expanded ? "Collapse subject" : "Expand subject"}
+        >
+          {expanded ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
       </div>
 
-      <p className="text-sm font-light text-foreground">{name}</p>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="text-left text-sm font-light text-foreground transition-colors hover:text-neutral-200"
+      >
+        {person.name}
+      </button>
 
-      <div className={cn(
-        "grid transition-all duration-300",
-        expanded ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]"
-      )}>
+      <div
+        className={cn(
+          "grid transition-all duration-300",
+          expanded ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]"
+        )}
+      >
         <div className="overflow-hidden">
           <div className="space-y-2 border-t border-neutral-800 pt-3">
-            <ContactRow icon={MapPin} text={`${personData.city}, ${personData.state}`} />
-            <ContactRow icon={Mail} text={personData.email} />
-            <ContactRow icon={Phone} text={personData.phone} />
-            <ContactRow icon={Globe} text={personData.website} />
+            <ContactRow
+              icon={MapPin}
+              text={[person.city, person.state].filter(Boolean).join(", ")}
+            />
+            <ContactRow icon={Mail} text={person.email} />
+            <ContactRow icon={Phone} text={person.phone} />
+            <ContactRow icon={Globe} text={person.website} />
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-interface UserData {
-  readonly id: string
-  readonly name: string
-  readonly linkedin: LinkedInProfile | null
 }
 
 export default function UserPage() {
@@ -72,22 +115,76 @@ export default function UserPage() {
 
   const [targetName, setTargetName] = useState("")
   const [loading, setLoading] = useState(true)
-  const [selectedNode, setSelectedNode] = useState<"linkedin" | "x" | "strava" | "mrkoll" | "company" | null>(null)
+  const [selectedNode, setSelectedNode] = useState<
+    "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | null
+  >(null)
   const [subjectExpanded, setSubjectExpanded] = useState(true)
-  const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(null)
+  const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(
+    null
+  )
   const [stravaState, setStravaState] = useState<StravaPanelState | null>(null)
   const [mrkollState, setMrkollState] = useState<MrkollPanelState | null>(null)
-  const [krafmanState, setKrafmanState] = useState<KrafmanPanelState | null>(null)
-  const [activeCompany, setActiveCompany] = useState<MrkollCompanyEngagement | null>(null)
+  const [krafmanState, setKrafmanState] = useState<KrafmanPanelState | null>(
+    null
+  )
+  const [activeCompany, setActiveCompany] =
+    useState<MrkollCompanyEngagement | null>(null)
+  const [person, setPerson] = useState<UserPerson | null>(null)
+  const [twitterProfile, setTwitterProfile] =
+    useState<UserTwitterProfile | null>(null)
+  const [subjectUpdatedAt, setSubjectUpdatedAt] = useState<string | null>(null)
+
+  const saveUserRecord = useCallback(
+    async (patch: UserRecordPatch): Promise<UserRecordData | null> => {
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        })
+        const data = (await response.json()) as {
+          ok: boolean
+          data?: UserRecordData
+        }
+
+        if (!data.ok || !data.data) {
+          return null
+        }
+
+        setSubjectUpdatedAt(data.data.updatedAt ?? null)
+        return data.data
+      } catch {
+        return null
+      }
+    },
+    [userId]
+  )
 
   useEffect(() => {
     fetch(`/api/users/${userId}`)
       .then((res) => res.json())
-      .then((data: { ok: boolean; data?: UserData }) => {
+      .then((data: { ok: boolean; data?: UserRecordData }) => {
         if (data.ok && data.data) {
           setTargetName(data.data.name)
+          setPerson(data.data.person ?? buildDefaultPerson(data.data.name))
+          setTwitterProfile(
+            data.data.twitter ?? buildDefaultTwitter(data.data.name)
+          )
+          setSubjectUpdatedAt(data.data.updatedAt ?? null)
           if (data.data.linkedin) {
             setLinkedinState({ status: "profile", profile: data.data.linkedin })
+          }
+          if (data.data.strava) {
+            setStravaState({ status: "profile", profile: data.data.strava })
+          }
+          if (data.data.mrkoll) {
+            setMrkollState({ status: "profile", profile: data.data.mrkoll })
+          }
+          if (data.data.activeCompany) {
+            setActiveCompany(data.data.activeCompany)
+          }
+          if (data.data.krafman) {
+            setKrafmanState({ status: "profile", profile: data.data.krafman })
           }
         }
       })
@@ -98,6 +195,11 @@ export default function UserPage() {
   /* ─── LinkedIn ─── */
 
   const handleLinkedinSelect = useCallback(async () => {
+    if (linkedinState?.status === "profile") {
+      setSelectedNode("linkedin")
+      return
+    }
+
     setSelectedNode("linkedin")
     setLinkedinState({ status: "searching" })
 
@@ -110,14 +212,21 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setLinkedinState({ status: "search-results", results: data.data, query: targetName })
+        setLinkedinState({
+          status: "search-results",
+          results: data.data,
+          query: targetName,
+        })
       } else {
         setLinkedinState({ status: "error", message: data.error })
       }
     } catch {
-      setLinkedinState({ status: "error", message: "Failed to search LinkedIn" })
+      setLinkedinState({
+        status: "error",
+        message: "Failed to search LinkedIn",
+      })
     }
-  }, [targetName])
+  }, [linkedinState, targetName])
 
   const handleRetryLinkedInSearch = useCallback(async (searchQuery: string) => {
     setLinkedinState({ status: "searching" })
@@ -131,39 +240,64 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setLinkedinState({ status: "search-results", results: data.data, query: searchQuery })
+        setLinkedinState({
+          status: "search-results",
+          results: data.data,
+          query: searchQuery,
+        })
       } else {
         setLinkedinState({ status: "error", message: data.error })
       }
     } catch {
-      setLinkedinState({ status: "error", message: "Failed to search LinkedIn" })
+      setLinkedinState({
+        status: "error",
+        message: "Failed to search LinkedIn",
+      })
     }
   }, [])
 
-  const handleSelectLinkedInResult = useCallback(async (result: LinkedInSearchResult) => {
-    setLinkedinState({ status: "scraping", name: result.name })
+  const handleSelectLinkedInResult = useCallback(
+    async (result: LinkedInSearchResult) => {
+      setLinkedinState({ status: "scraping", name: result.name })
 
-    try {
-      const res = await fetch("/api/linkedin/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: result.profileUrl, searchName: targetName }),
-      })
-      const data = await res.json()
+      try {
+        const res = await fetch("/api/linkedin/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: result.profileUrl,
+            searchName: targetName,
+          }),
+        })
+        const data = await res.json()
 
-      if (data.ok) {
-        setLinkedinState({ status: "profile", profile: data.data })
-      } else {
-        setLinkedinState({ status: "error", message: data.error })
+        if (data.ok) {
+          setLinkedinState({ status: "profile", profile: data.data })
+          await saveUserRecord({
+            linkedin: data.data,
+            linkedinUrl: data.data.linkedInUrl.replace(/\/$/, ""),
+          })
+        } else {
+          setLinkedinState({ status: "error", message: data.error })
+        }
+      } catch {
+        setLinkedinState({
+          status: "error",
+          message: "Failed to scrape profile",
+        })
       }
-    } catch {
-      setLinkedinState({ status: "error", message: "Failed to scrape profile" })
-    }
-  }, [targetName])
+    },
+    [saveUserRecord, targetName]
+  )
 
   /* ─── Strava ─── */
 
   const handleStravaSelect = useCallback(async () => {
+    if (stravaState?.status === "profile") {
+      setSelectedNode("strava")
+      return
+    }
+
     setSelectedNode("strava")
     setStravaState({ status: "searching" })
 
@@ -176,41 +310,54 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setStravaState({ status: "search-results", results: data.data, query: targetName })
+        setStravaState({
+          status: "search-results",
+          results: data.data,
+          query: targetName,
+        })
       } else {
         setStravaState({ status: "error", message: data.error })
       }
     } catch {
       setStravaState({ status: "error", message: "Failed to search Strava" })
     }
-  }, [targetName])
+  }, [stravaState, targetName])
 
-  const handleSelectStravaResult = useCallback(async (result: StravaSearchResult) => {
-    setStravaState({ status: "scraping", name: result.name })
+  const handleSelectStravaResult = useCallback(
+    async (result: StravaSearchResult) => {
+      setStravaState({ status: "scraping", name: result.name })
 
-    const athleteId = result.athleteUrl.split("/athletes/")[1]?.replace(/\/$/, "")
-    if (!athleteId) {
-      setStravaState({ status: "error", message: "Invalid athlete URL" })
-      return
-    }
-
-    try {
-      const res = await fetch("/api/strava/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athleteId }),
-      })
-      const data = await res.json()
-
-      if (data.ok) {
-        setStravaState({ status: "profile", profile: data.data })
-      } else {
-        setStravaState({ status: "error", message: data.error })
+      const athleteId = result.athleteUrl
+        .split("/athletes/")[1]
+        ?.replace(/\/$/, "")
+      if (!athleteId) {
+        setStravaState({ status: "error", message: "Invalid athlete URL" })
+        return
       }
-    } catch {
-      setStravaState({ status: "error", message: "Failed to load athlete profile" })
-    }
-  }, [])
+
+      try {
+        const res = await fetch("/api/strava/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ athleteId }),
+        })
+        const data = await res.json()
+
+        if (data.ok) {
+          setStravaState({ status: "profile", profile: data.data })
+          await saveUserRecord({ strava: data.data })
+        } else {
+          setStravaState({ status: "error", message: data.error })
+        }
+      } catch {
+        setStravaState({
+          status: "error",
+          message: "Failed to load athlete profile",
+        })
+      }
+    },
+    [saveUserRecord]
+  )
 
   const handleRetryStravaSearch = useCallback(async (searchQuery: string) => {
     setStravaState({ status: "searching" })
@@ -224,7 +371,11 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setStravaState({ status: "search-results", results: data.data, query: searchQuery })
+        setStravaState({
+          status: "search-results",
+          results: data.data,
+          query: searchQuery,
+        })
       } else {
         setStravaState({ status: "error", message: data.error })
       }
@@ -236,6 +387,11 @@ export default function UserPage() {
   /* ─── Mrkoll ─── */
 
   const handleMrkollSelect = useCallback(async () => {
+    if (mrkollState?.status === "profile") {
+      setSelectedNode("mrkoll")
+      return
+    }
+
     setSelectedNode("mrkoll")
     setMrkollState({ status: "searching" })
 
@@ -248,14 +404,18 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setMrkollState({ status: "search-results", results: data.data, query: targetName })
+        setMrkollState({
+          status: "search-results",
+          results: data.data,
+          query: targetName,
+        })
       } else {
         setMrkollState({ status: "error", message: data.error })
       }
     } catch {
       setMrkollState({ status: "error", message: "Failed to search Mrkoll" })
     }
-  }, [targetName])
+  }, [mrkollState, targetName])
 
   const handleRetryMrkollSearch = useCallback(async (searchQuery: string) => {
     setMrkollState({ status: "searching" })
@@ -269,7 +429,11 @@ export default function UserPage() {
       const data = await res.json()
 
       if (data.ok) {
-        setMrkollState({ status: "search-results", results: data.data, query: searchQuery })
+        setMrkollState({
+          status: "search-results",
+          results: data.data,
+          query: searchQuery,
+        })
       } else {
         setMrkollState({ status: "error", message: data.error })
       }
@@ -278,80 +442,105 @@ export default function UserPage() {
     }
   }, [])
 
-  const handleSelectMrkollResult = useCallback(async (result: MrkollSearchResult) => {
-    setMrkollState({ status: "scraping", name: result.name })
+  const loadKrafmanCompany = useCallback(
+    async (company: MrkollCompanyEngagement) => {
+      if (!company.krafmanUrl) return
 
-    try {
-      const res = await fetch("/api/mrkoll/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: result.profileUrl }),
-      })
-      const data = await res.json()
+      setActiveCompany(company)
+      setKrafmanState({ status: "scraping", companyName: company.companyName })
+      void saveUserRecord({ activeCompany: company })
 
-      if (data.ok) {
-        setMrkollState({ status: "profile", profile: data.data })
-        const firstCompanyWithKrafman = data.data.companies?.find(
-          (c: MrkollCompanyEngagement) => c.krafmanUrl
-        )
-        if (firstCompanyWithKrafman) {
-          setActiveCompany(firstCompanyWithKrafman)
-          loadKrafmanCompany(firstCompanyWithKrafman)
+      try {
+        const res = await fetch("/api/krafman/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: company.krafmanUrl }),
+        })
+        const data = await res.json()
+
+        if (data.ok) {
+          setKrafmanState({ status: "profile", profile: data.data })
+          await saveUserRecord({
+            activeCompany: company,
+            krafman: data.data,
+          })
+        } else {
+          setKrafmanState({ status: "error", message: data.error })
         }
-      } else {
-        setMrkollState({ status: "error", message: data.error })
+      } catch {
+        setKrafmanState({ status: "error", message: "Failed to load company" })
       }
-    } catch {
-      setMrkollState({ status: "error", message: "Failed to load profile" })
-    }
-  }, [])
+    },
+    [saveUserRecord]
+  )
+
+  const handleSelectMrkollResult = useCallback(
+    async (result: MrkollSearchResult) => {
+      setMrkollState({ status: "scraping", name: result.name })
+
+      try {
+        const res = await fetch("/api/mrkoll/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: result.profileUrl }),
+        })
+        const data = await res.json()
+
+        if (data.ok) {
+          setMrkollState({ status: "profile", profile: data.data })
+          const firstCompanyWithKrafman = data.data.companies?.find(
+            (c: MrkollCompanyEngagement) => c.krafmanUrl
+          )
+          await saveUserRecord({
+            mrkoll: data.data,
+            activeCompany: firstCompanyWithKrafman ?? null,
+          })
+          if (firstCompanyWithKrafman) {
+            setActiveCompany(firstCompanyWithKrafman)
+            loadKrafmanCompany(firstCompanyWithKrafman)
+          }
+        } else {
+          setMrkollState({ status: "error", message: data.error })
+        }
+      } catch {
+        setMrkollState({ status: "error", message: "Failed to load profile" })
+      }
+    },
+    [loadKrafmanCompany, saveUserRecord]
+  )
 
   /* ─── Krafman ─── */
 
-  const loadKrafmanCompany = useCallback(async (company: MrkollCompanyEngagement) => {
-    if (!company.krafmanUrl) return
-
-    setActiveCompany(company)
-    setKrafmanState({ status: "scraping", companyName: company.companyName })
-
-    try {
-      const res = await fetch("/api/krafman/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: company.krafmanUrl }),
-      })
-      const data = await res.json()
-
-      if (data.ok) {
-        setKrafmanState({ status: "profile", profile: data.data })
-      } else {
-        setKrafmanState({ status: "error", message: data.error })
+  const handleOpenCompany = useCallback(
+    (company: MrkollCompanyEngagement) => {
+      if (company.krafmanUrl) {
+        loadKrafmanCompany(company)
+        setSelectedNode("company")
       }
-    } catch {
-      setKrafmanState({ status: "error", message: "Failed to load company" })
-    }
-  }, [])
+    },
+    [loadKrafmanCompany]
+  )
 
-  const handleOpenCompany = useCallback((company: MrkollCompanyEngagement) => {
-    if (company.krafmanUrl) {
-      loadKrafmanCompany(company)
-      setSelectedNode("company")
-    }
-  }, [loadKrafmanCompany])
+  const handleSelectSubject = useCallback(() => {
+    setSelectedNode("subject")
+  }, [])
 
   /* ─── Node Selection ─── */
 
-  const handleSelectNode = useCallback((source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => {
-    if (source === "linkedin") {
-      handleLinkedinSelect()
-    } else if (source === "strava") {
-      handleStravaSelect()
-    } else if (source === "mrkoll") {
-      handleMrkollSelect()
-    } else {
-      setSelectedNode(source)
-    }
-  }, [handleLinkedinSelect, handleStravaSelect, handleMrkollSelect])
+  const handleSelectNode = useCallback(
+    (source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => {
+      if (source === "linkedin") {
+        handleLinkedinSelect()
+      } else if (source === "strava") {
+        handleStravaSelect()
+      } else if (source === "mrkoll") {
+        handleMrkollSelect()
+      } else {
+        setSelectedNode(source)
+      }
+    },
+    [handleLinkedinSelect, handleStravaSelect, handleMrkollSelect]
+  )
 
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null)
@@ -360,7 +549,9 @@ export default function UserPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">Loading...</span>
+        <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">
+          Loading...
+        </span>
       </div>
     )
   }
@@ -368,10 +559,14 @@ export default function UserPage() {
   if (!targetName) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">User not found</span>
+        <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">
+          User not found
+        </span>
       </div>
     )
   }
+
+  const subject = person ?? buildDefaultPerson(targetName)
 
   return (
     <div className="relative h-screen overflow-hidden bg-background">
@@ -379,7 +574,8 @@ export default function UserPage() {
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.035]"
         style={{
-          backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(circle, white 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -387,14 +583,27 @@ export default function UserPage() {
       {/* Left sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-neutral-800 bg-background p-6">
         <div className="mb-6">
-          <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">THEA</span>
-          <p className="mt-1.5 text-[10px] uppercase tracking-[0.2em] text-neutral-600">is looking for</p>
+          <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">
+            THEA
+          </span>
+          <p className="mt-1.5 text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+            is looking for
+          </p>
         </div>
 
         <div className="flex flex-col gap-2">
+          <Link
+            href="/"
+            className="inline-flex w-fit items-center gap-2 rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            <span>Back to homescreen</span>
+          </Link>
+
           <PersonNode
-            name={targetName}
+            person={subject}
             expanded={subjectExpanded}
+            onSelect={handleSelectSubject}
             onToggle={() => setSubjectExpanded(!subjectExpanded)}
           />
         </div>
@@ -409,14 +618,23 @@ export default function UserPage() {
           height: "100%",
         }}
       >
-        <div className="animate-in fade-in h-full duration-500">
+        <div className="h-full animate-in duration-500 fade-in">
           <GraphCanvas
             onSelect={handleSelectNode}
             onDeselect={() => setSelectedNode(null)}
-            linkedinProfile={linkedinState?.status === "profile" ? linkedinState.profile : null}
-            stravaProfile={stravaState?.status === "profile" ? stravaState.profile : null}
-            mrkollProfile={mrkollState?.status === "profile" ? mrkollState.profile : null}
-            krafmanProfile={krafmanState?.status === "profile" ? krafmanState.profile : null}
+            linkedinProfile={
+              linkedinState?.status === "profile" ? linkedinState.profile : null
+            }
+            twitterProfile={twitterProfile}
+            stravaProfile={
+              stravaState?.status === "profile" ? stravaState.profile : null
+            }
+            mrkollProfile={
+              mrkollState?.status === "profile" ? mrkollState.profile : null
+            }
+            krafmanProfile={
+              krafmanState?.status === "profile" ? krafmanState.profile : null
+            }
             showCompanyNode={activeCompany !== null}
           />
         </div>
@@ -426,6 +644,22 @@ export default function UserPage() {
       <DetailPanel
         source={selectedNode}
         onClose={handleClosePanel}
+        subject={{
+          name: targetName,
+          email: subject.email,
+          phone: subject.phone,
+          website: subject.website,
+          city: subject.city,
+          state: subject.state,
+          country: subject.country,
+          updatedAt: subjectUpdatedAt,
+          linkedinProfile:
+            linkedinState?.status === "profile" ? linkedinState.profile : null,
+          stravaProfile:
+            stravaState?.status === "profile" ? stravaState.profile : null,
+          mrkollProfile:
+            mrkollState?.status === "profile" ? mrkollState.profile : null,
+        }}
         linkedinState={linkedinState}
         onSelectLinkedInResult={handleSelectLinkedInResult}
         onRetryLinkedInSearch={handleRetryLinkedInSearch}
@@ -437,6 +671,7 @@ export default function UserPage() {
         onRetryMrkollSearch={handleRetryMrkollSearch}
         onOpenCompany={handleOpenCompany}
         krafmanState={krafmanState}
+        twitterProfile={twitterProfile}
       />
     </div>
   )

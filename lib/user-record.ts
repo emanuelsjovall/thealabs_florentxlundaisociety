@@ -1,0 +1,86 @@
+import type { LinkedInProfile } from "@/lib/linkedin"
+import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
+import type { MrkollCompanyEngagement, MrkollProfile } from "@/lib/mrkoll.types"
+import type { StravaProfile } from "@/lib/strava"
+import personData from "@/data/mock/person.json"
+import xData from "@/data/mock/x.json"
+
+export interface UserPerson {
+  readonly source: string
+  readonly name: string
+  readonly email: string
+  readonly phone: string
+  readonly city: string
+  readonly state: string
+  readonly country: string
+  readonly zip: string
+  readonly website: string
+}
+
+export interface UserTwitterTweet {
+  readonly id: string
+  readonly text: string
+  readonly posted_at: string
+  readonly likes: number
+  readonly retweets: number
+  readonly replies: number
+  readonly views: number
+  readonly is_retweet: boolean
+}
+
+export interface UserTwitterProfile {
+  readonly handle: string
+  readonly name: string
+  readonly bio: string
+  readonly location: string
+  readonly website: string
+  readonly joined: string
+  readonly verified: boolean
+  readonly blue_verified: boolean
+  readonly followers: number
+  readonly following: number
+  readonly tweets_count: number
+  readonly likes_count: number
+  readonly avatar_url: string | null
+  readonly recent_tweets: readonly UserTwitterTweet[]
+  readonly top_topics: readonly string[]
+  readonly profile_url: string
+}
+
+export interface UserRecordData {
+  readonly id: string
+  readonly name: string
+  readonly person: UserPerson | null
+  readonly linkedin: LinkedInProfile | null
+  readonly strava: StravaProfile | null
+  readonly mrkoll: MrkollProfile | null
+  readonly activeCompany: MrkollCompanyEngagement | null
+  readonly krafman: KrafmanCompanyProfile | null
+  readonly twitter: UserTwitterProfile | null
+  readonly updatedAt: string
+}
+
+export interface UserRecordPatch {
+  readonly person?: UserPerson | null
+  readonly linkedin?: LinkedInProfile | null
+  readonly linkedinUrl?: string | null
+  readonly strava?: StravaProfile | null
+  readonly mrkoll?: MrkollProfile | null
+  readonly activeCompany?: MrkollCompanyEngagement | null
+  readonly krafman?: KrafmanCompanyProfile | null
+  readonly twitter?: UserTwitterProfile | null
+}
+
+export function buildDefaultPerson(name: string): UserPerson {
+  return {
+    ...personData,
+    name,
+  }
+}
+
+export function buildDefaultTwitter(name: string): UserTwitterProfile {
+  return {
+    ...xData.profile,
+    name,
+  }
+}

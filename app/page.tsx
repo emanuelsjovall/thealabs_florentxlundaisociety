@@ -112,7 +112,7 @@ export default function Page() {
                   <button
                     key={user.id}
                     onClick={() => router.push(`/${user.id}`)}
-                    className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-left transition-colors hover:border-neutral-700"
+                    className="cursor-pointer rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-left transition-colors hover:border-neutral-700"
                   >
                     <p className="truncate text-sm text-foreground">{user.name}</p>
                     <p className="mt-1 truncate text-xs text-neutral-600">

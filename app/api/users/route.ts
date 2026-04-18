@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { buildDefaultPerson, buildDefaultTwitter } from "@/lib/user-record"
+
+function toJsonInput(
+  value: unknown | null | undefined
+): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return Prisma.JsonNull
+
+  return value as Prisma.InputJsonValue
+}
 
 export async function GET(): Promise<NextResponse> {
   const users = await prisma.user.findMany({
@@ -24,17 +35,37 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!name) {
     return NextResponse.json(
       { ok: false, error: "name is required" },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   const normalizedName = name.toLowerCase()
-
-  const user = await prisma.user.upsert({
+  const existing = await prisma.user.findUnique({
     where: { normalizedName },
-    create: { name, normalizedName },
-    update: { updatedAt: new Date() },
+    select: {
+      id: true,
+      person: true,
+      twitter: true,
+    },
   })
+
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          updatedAt: new Date(),
+          person: toJsonInput(existing.person ?? buildDefaultPerson(name)),
+          twitter: toJsonInput(existing.twitter ?? buildDefaultTwitter(name)),
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          name,
+          normalizedName,
+          person: toJsonInput(buildDefaultPerson(name)),
+          twitter: toJsonInput(buildDefaultTwitter(name)),
+        },
+      })
 
   return NextResponse.json({ ok: true, data: user })
 }

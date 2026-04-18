@@ -11,11 +11,16 @@ model User {
   id             String   @id @default(cuid())
   name           String
   normalizedName String   @unique @map("normalized_name")
+  person         Json?
   linkedinUrl    String?  @unique @map("linkedin_url")
-  linkedin    Json?
-  twitter     Json?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  linkedin       Json?
+  strava         Json?
+  mrkoll         Json?
+  activeCompany  Json?    @map("active_company")
+  krafman        Json?
+  twitter        Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }
