@@ -1676,6 +1676,37 @@ export function DetailPanel({
 }: DetailPanelProps) {
   const open = source !== null
 
+  const [stravaTimelineState, setStravaTimelineState] = useState<StravaDetailState>({ status: "idle" })
+
+  useEffect(() => {
+    if (timelineEvent?.kind !== "strava-activity") {
+      setStravaTimelineState({ status: "idle" })
+      return
+    }
+    const activityId = String(timelineEvent.payload.id)
+    setStravaTimelineState({ status: "loading", activityId })
+    fetch("/api/strava/activity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activityId }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok) {
+          setStravaTimelineState({
+            status: "loaded",
+            detail: {
+              ...data.data,
+              mapUrl: data.data.mapUrl ?? timelineEvent.payload.mapUrl ?? null,
+            },
+          })
+        } else {
+          setStravaTimelineState({ status: "error", message: data.error })
+        }
+      })
+      .catch(() => setStravaTimelineState({ status: "error", message: "Failed to load activity" }))
+  }, [timelineEvent])
+
   function renderLinkedinContent(): ReactNode {
     if (!linkedinState) return null
     switch (linkedinState.status) {
@@ -1931,17 +1962,6 @@ export function DetailPanel({
     }
   }
 
-  function formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    if (h > 0) return `${h}h ${m}m`
-    return `${m}m`
-  }
-
-  function formatDistance(meters: number): string {
-    if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
-    return `${Math.round(meters)} m`
-  }
 
   function renderTimelineEventContent(): ReactNode {
     if (!timelineEvent) return null
@@ -2049,6 +2069,16 @@ export function DetailPanel({
       }
 
       case "strava-activity": {
+        if (stravaTimelineState.status === "loading") {
+          return <LoadingSpinner text="Loading activity..." />
+        }
+        if (stravaTimelineState.status === "loaded") {
+          return <StravaActivityDetailContent detail={stravaTimelineState.detail} onBack={() => {}} />
+        }
+        if (stravaTimelineState.status === "error") {
+          return <p className="py-12 text-center text-xs text-red-400">{stravaTimelineState.message}</p>
+        }
+        // idle / fallback — show basic info while loading starts
         const act = timelineEvent.payload
         return (
           <div className="space-y-5">
@@ -2059,39 +2089,6 @@ export function DetailPanel({
                 <p className="mt-1 text-[10px] text-neutral-600">{formatDate(timelineEvent.startDate)}</p>
               </Card>
             </Section>
-            <Section label="Stats">
-              <div className="flex gap-5 flex-wrap">
-                {act.distanceMeters != null && (
-                  <div>
-                    <p className="font-mono text-xs text-neutral-200">{formatDistance(act.distanceMeters)}</p>
-                    <p className="text-[9px] tracking-widest text-neutral-600">DISTANCE</p>
-                  </div>
-                )}
-                {act.movingTimeSeconds != null && (
-                  <div>
-                    <p className="font-mono text-xs text-neutral-200">{formatDuration(act.movingTimeSeconds)}</p>
-                    <p className="text-[9px] tracking-widest text-neutral-600">MOVING TIME</p>
-                  </div>
-                )}
-                {act.elevationMeters != null && (
-                  <div>
-                    <p className="font-mono text-xs text-neutral-200">{Math.round(act.elevationMeters)} m</p>
-                    <p className="text-[9px] tracking-widest text-neutral-600">ELEVATION</p>
-                  </div>
-                )}
-              </div>
-            </Section>
-            {act.activityUrl && (
-              <a
-                href={act.activityUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
-              >
-                <ExternalLink className="h-3 w-3" />
-                View on Strava
-              </a>
-            )}
           </div>
         )
       }
