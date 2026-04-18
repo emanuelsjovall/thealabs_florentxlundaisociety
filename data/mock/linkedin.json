@@ -1,0 +1,82 @@
+{
+  "source": "linkedin",
+  "scraped_at": "2026-04-18T10:00:00Z",
+  "profile": {
+    "name": "Alex Morgan",
+    "headline": "Senior Software Engineer at Stripe | Ex-Google X",
+    "location": "San Francisco, CA",
+    "connections": 847,
+    "followers": 1203,
+    "avatar_url": null,
+    "about": "Building payments infrastructure at scale. Previously at Google X and DeepMind. Passionate about distributed systems and ML.",
+    "current_position": {
+      "title": "Senior Software Engineer",
+      "company": "Stripe",
+      "start_date": "2023-06",
+      "location": "San Francisco, CA"
+    },
+    "experience": [
+      {
+        "title": "Staff Engineer",
+        "company": "Google X",
+        "start_date": "2020-03",
+        "end_date": "2023-05",
+        "duration": "3 yrs 2 mos",
+        "location": "Mountain View, CA"
+      },
+      {
+        "title": "Research Engineer",
+        "company": "DeepMind",
+        "start_date": "2018-01",
+        "end_date": "2020-02",
+        "duration": "2 yrs 1 mo",
+        "location": "London, UK"
+      },
+      {
+        "title": "Software Engineer",
+        "company": "Shopify",
+        "start_date": "2016-07",
+        "end_date": "2017-12",
+        "duration": "1 yr 5 mos",
+        "location": "Ottawa, Canada"
+      }
+    ],
+    "education": [
+      {
+        "school": "MIT",
+        "degree": "M.Sc. Computer Science",
+        "field": "Distributed Systems",
+        "years": "2016-2018"
+      },
+      {
+        "school": "University of Toronto",
+        "degree": "B.Sc. Mathematics & Computer Science",
+        "years": "2012-2016"
+      }
+    ],
+    "skills": [
+      "Distributed Systems",
+      "Go",
+      "Rust",
+      "Machine Learning",
+      "Python",
+      "Kubernetes",
+      "PostgreSQL",
+      "Redis",
+      "Apache Kafka"
+    ],
+    "languages": [
+      "English (Native)",
+      "French (Professional)",
+      "Mandarin (Elementary)"
+    ],
+    "certifications": [
+      {
+        "name": "AWS Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "year": 2022
+      }
+    ],
+    "profile_url": "https://linkedin.com/in/alex-morgan-dev"
+  }
+}

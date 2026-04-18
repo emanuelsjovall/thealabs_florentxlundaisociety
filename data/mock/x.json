@@ -1,0 +1,70 @@
+{
+  "source": "x",
+  "scraped_at": "2026-04-18T10:00:00Z",
+  "profile": {
+    "handle": "@alexmorgancodes",
+    "name": "Alex Morgan",
+    "bio": "eng @stripe • prev @googlex @deepmind • shipping bits since forever • opinions my own",
+    "location": "San Francisco",
+    "website": "alexmorgan.dev",
+    "joined": "2012-03-01",
+    "verified": false,
+    "blue_verified": false,
+    "followers": 14200,
+    "following": 891,
+    "tweets_count": 4372,
+    "likes_count": 18740,
+    "avatar_url": null,
+    "recent_tweets": [
+      {
+        "id": "tweet_001",
+        "text": "Fascinating paper on consensus algorithms in geo-distributed systems. The latency trade-offs with Paxos vs Raft are still underappreciated by most engineers.",
+        "posted_at": "2026-04-17T14:22:00Z",
+        "likes": 312,
+        "retweets": 87,
+        "replies": 24,
+        "views": 24800,
+        "is_retweet": false
+      },
+      {
+        "id": "tweet_002",
+        "text": "Hot take: most 'AI-native' startups are just wrapper companies with good branding. The ones that survive will be those who own the data layer.",
+        "posted_at": "2026-04-15T09:10:00Z",
+        "likes": 1847,
+        "retweets": 402,
+        "replies": 198,
+        "views": 142000,
+        "is_retweet": false
+      },
+      {
+        "id": "tweet_003",
+        "text": "Just pushed a Rust-based stream processor that handles 2M events/sec on a single node. OSS soon. If you're still using Kafka for <10M events/day you might be overengineering.",
+        "posted_at": "2026-04-12T17:45:00Z",
+        "likes": 923,
+        "retweets": 211,
+        "replies": 67,
+        "views": 67200,
+        "is_retweet": false
+      },
+      {
+        "id": "tweet_004",
+        "text": "Reminder that code review is a communication skill, not a gatekeeping tool. If your team dreads reviews, the process is broken, not the code.",
+        "posted_at": "2026-04-09T11:30:00Z",
+        "likes": 2341,
+        "retweets": 618,
+        "replies": 141,
+        "views": 198000,
+        "is_retweet": false
+      }
+    ],
+    "top_topics": [
+      "distributed systems",
+      "rust",
+      "AI",
+      "payments",
+      "open source",
+      "engineering culture"
+    ],
+    "profile_url": "https://x.com/alexmorgancodes"
+  }
+}
