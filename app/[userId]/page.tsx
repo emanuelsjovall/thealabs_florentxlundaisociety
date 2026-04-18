@@ -20,6 +20,7 @@ import type {
   MrkollPanelState,
   KrafmanPanelState,
   TwitterPanelState,
+  BreachPanelState,
 } from "@/components/detail-panel"
 import { cn } from "@/lib/utils"
 import type { LinkedInSearchResult } from "@/lib/linkedin"
@@ -118,7 +119,7 @@ export default function UserPage() {
   const [targetName, setTargetName] = useState("")
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<
-    "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | null
+    "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach" | null
   >(null)
   const [subjectExpanded, setSubjectExpanded] = useState(true)
   const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(
@@ -129,6 +130,7 @@ export default function UserPage() {
   const [krafmanState, setKrafmanState] = useState<KrafmanPanelState | null>(
     null
   )
+  const [breachState, setBreachState] = useState<BreachPanelState | null>(null)
   const [activeCompany, setActiveCompany] =
     useState<MrkollCompanyEngagement | null>(null)
   const [person, setPerson] = useState<UserPerson | null>(null)
@@ -191,6 +193,9 @@ export default function UserPage() {
           }
           if (data.data.krafman) {
             setKrafmanState({ status: "profile", profile: data.data.krafman })
+          }
+          if (data.data.breach) {
+            setBreachState({ status: "results", data: data.data.breach })
           }
         }
       })
@@ -610,6 +615,36 @@ export default function UserPage() {
     [loadKrafmanCompany, saveUserRecord]
   )
 
+  /* ─── Breach ─── */
+
+  const handleBreachSelect = useCallback(async () => {
+    if (breachState?.status === "results") {
+      setSelectedNode("breach")
+      return
+    }
+
+    setSelectedNode("breach")
+    setBreachState({ status: "searching" })
+
+    try {
+      const res = await fetch("/api/breach/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: targetName }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        setBreachState({ status: "results", data: data.data })
+        await saveUserRecord({ breach: data.data })
+      } else {
+        setBreachState({ status: "error", message: data.error })
+      }
+    } catch {
+      setBreachState({ status: "error", message: "Failed to search breach records" })
+    }
+  }, [breachState, targetName, saveUserRecord])
+
   /* ─── Krafman ─── */
 
   const handleOpenCompany = useCallback(
@@ -663,7 +698,7 @@ export default function UserPage() {
   /* ─── Node Selection ─── */
 
   const handleSelectNode = useCallback(
-    (source: "linkedin" | "x" | "strava" | "mrkoll" | "company") => {
+    (source: "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach") => {
       if (source === "linkedin") {
         handleLinkedinSelect()
       } else if (source === "x") {
@@ -672,15 +707,18 @@ export default function UserPage() {
         handleStravaSelect()
       } else if (source === "mrkoll") {
         handleMrkollSelect()
+      } else if (source === "breach") {
+        handleBreachSelect()
       } else {
         setSelectedNode(source)
       }
     },
     [
       handleLinkedinSelect,
-      handleMrkollSelect,
       handleStravaSelect,
+      handleMrkollSelect,
       handleTwitterSelect,
+      handleBreachSelect,
     ]
   )
 
@@ -780,6 +818,9 @@ export default function UserPage() {
               krafmanState?.status === "profile" ? krafmanState.profile : null
             }
             showCompanyNode={activeCompany !== null}
+            breachResult={
+              breachState?.status === "results" ? breachState.data : null
+            }
           />
         </div>
       </main>
@@ -819,6 +860,7 @@ export default function UserPage() {
         onSelectTwitterResult={handleSelectTwitterResult}
         onRetryTwitterSearch={handleRetryTwitterSearch}
         onRefreshTwitter={handleRefreshTwitter}
+        breachState={breachState}
       />
     </div>
   )

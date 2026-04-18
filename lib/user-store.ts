@@ -23,6 +23,7 @@ export const userSelect = {
   activeCompany: true,
   krafman: true,
   twitter: true,
+  breach: true,
   twitterUsername: true,
   twitterFetchedAt: true,
   twitterTweets: {
@@ -99,6 +100,7 @@ export function serializeUserRecord(user: UserWithTwitterCache): UserRecordData 
     ),
     twitterUsername: user.twitterUsername,
     twitterFetchedAt: user.twitterFetchedAt?.toISOString() ?? null,
+    breach: user.breach as UserRecordData["breach"],
     updatedAt: user.updatedAt.toISOString(),
   }
 }

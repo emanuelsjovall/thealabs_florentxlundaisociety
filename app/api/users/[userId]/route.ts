@@ -49,6 +49,7 @@ export async function PATCH(
     krafman?: unknown | null
     twitter?: unknown | null
     twitterUsername?: string | null
+    breach?: unknown | null
   }
 
   const user = await prisma.user.update({
@@ -69,6 +70,7 @@ export async function PATCH(
         body.twitterUsername === undefined
           ? undefined
           : body.twitterUsername?.trim().replace(/^@+/, "") || null,
+      breach: toJsonInput(body.breach),
       updatedAt: new Date(),
     },
     select: userSelect,

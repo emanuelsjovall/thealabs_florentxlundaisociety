@@ -18,6 +18,7 @@ import type {
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { TwitterSearchResult } from "@/lib/twitter-api"
 import type { UserTwitterProfile } from "@/lib/user-record"
+import type { BreachSearchResult, BreachRecord } from "@/lib/breach"
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -1330,6 +1331,53 @@ function TwitterProfileContent({
   )
 }
 
+/* ─── Breach Results ─── */
+
+function BreachRecordCard({ record }: { record: BreachRecord }) {
+  const entries = Object.entries(record).filter(([, v]) => v !== null && v !== undefined && v !== "")
+  return (
+    <Card>
+      <div className="space-y-1.5">
+        {entries.map(([key, value]) => (
+          <div key={key} className="flex gap-2 text-xs">
+            <span className="w-24 shrink-0 font-mono text-[10px] text-neutral-600 uppercase">
+              {key}
+            </span>
+            <span className="min-w-0 break-all text-neutral-400">
+              {String(value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+function BreachResultsContent({ data }: { data: BreachSearchResult }) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-xl font-light text-foreground">{data.count} record{data.count !== 1 ? "s" : ""}</h3>
+        <p className="mt-1.5 text-sm text-neutral-500">
+          searched for &ldquo;{data.term}&rdquo;
+        </p>
+      </div>
+
+      {data.count === 0 ? (
+        <p className="py-12 text-center text-xs text-neutral-600">No breach records found</p>
+      ) : (
+        <Section label={`Results (${data.count})`}>
+          <div className="space-y-3">
+            {data.results.map((record, i) => (
+              <BreachRecordCard key={i} record={record} />
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
+  )
+}
+
 /* ─── Panel State Types ─── */
 
 export type LinkedInPanelState =
@@ -1376,6 +1424,11 @@ export type TwitterPanelState =
   | { status: "profile"; profile: UserTwitterProfile }
   | { status: "error"; message: string }
 
+export type BreachPanelState =
+  | { status: "searching" }
+  | { status: "results"; data: BreachSearchResult }
+  | { status: "error"; message: string }
+
 export type KrafmanPanelState =
   | { status: "scraping"; companyName: string }
   | { status: "profile"; profile: KrafmanCompanyProfile }
@@ -1384,7 +1437,7 @@ export type KrafmanPanelState =
 /* ─── Detail Panel ─── */
 
 interface DetailPanelProps {
-  source: "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | null
+  source: "subject" | "linkedin" | "x" | "strava" | "mrkoll" | "company" | "breach" | null
   onClose: () => void
   subject: SubjectPanelData
   linkedinState: LinkedInPanelState | null
@@ -1402,6 +1455,7 @@ interface DetailPanelProps {
   onSelectTwitterResult: (result: TwitterSearchResult) => void
   onRetryTwitterSearch: (query: string) => void
   onRefreshTwitter: () => void
+  breachState: BreachPanelState | null
 }
 
 export function DetailPanel({
@@ -1423,6 +1477,7 @@ export function DetailPanel({
   onSelectTwitterResult,
   onRetryTwitterSearch,
   onRefreshTwitter,
+  breachState,
 }: DetailPanelProps) {
   const open = source !== null
 
@@ -1548,6 +1603,22 @@ export function DetailPanel({
     }
   }
 
+  function renderBreachContent(): ReactNode {
+    if (!breachState) return null
+    switch (breachState.status) {
+      case "searching":
+        return <LoadingSpinner text="Searching breach records..." />
+      case "results":
+        return <BreachResultsContent data={breachState.data} />
+      case "error":
+        return (
+          <p className="py-12 text-center text-xs text-red-400">
+            {breachState.message}
+          </p>
+        )
+    }
+  }
+
   function renderKrafmanContent(): ReactNode {
     if (!krafmanState) return null
     switch (krafmanState.status) {
@@ -1588,6 +1659,8 @@ export function DetailPanel({
           : "MRKOLL"
       case "company":
         return "COMPANY"
+      case "breach":
+        return "BREACH"
       default:
         return ""
     }
@@ -1607,6 +1680,8 @@ export function DetailPanel({
         return "bg-emerald-600/40"
       case "x":
         return "bg-sky-600/30"
+      case "breach":
+        return "bg-red-600/40"
       default:
         return "bg-neutral-700/60"
     }
@@ -1626,6 +1701,8 @@ export function DetailPanel({
         return "text-emerald-500"
       case "x":
         return "text-sky-400"
+      case "breach":
+        return "text-red-500"
       default:
         return "text-neutral-400"
     }
@@ -1674,6 +1751,7 @@ export function DetailPanel({
         {source === "x" && renderTwitterContent()}
         {source === "mrkoll" && renderMrkollContent()}
         {source === "company" && renderKrafmanContent()}
+        {source === "breach" && renderBreachContent()}
       </div>
     </div>
   )
