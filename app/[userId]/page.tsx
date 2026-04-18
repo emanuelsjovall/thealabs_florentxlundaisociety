@@ -865,7 +865,7 @@ export default function UserPage() {
             className={cn(
               "rounded-md px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors",
               activeView === "graph"
-                ? "bg-neutral-800 text-foreground"
+                ? "bg-neutral-800 text-white"
                 : "text-neutral-600 hover:text-neutral-400"
             )}
           >
@@ -877,7 +877,7 @@ export default function UserPage() {
             className={cn(
               "rounded-md px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors",
               activeView === "timeline"
-                ? "bg-neutral-800 text-foreground"
+                ? "bg-neutral-800 text-white"
                 : "text-neutral-600 hover:text-neutral-400"
             )}
           >
