@@ -65,6 +65,10 @@ export const userSelect = {
     orderBy: { createdAt: "desc" },
     select: stravaActivitySelect,
   },
+  notes: {
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, content: true, createdAt: true, updatedAt: true },
+  },
   updatedAt: true,
 } satisfies Prisma.UserSelect
 
@@ -210,6 +214,12 @@ export function serializeUserRecord(user: UserWithTwitterCache): UserRecordData 
     githubUsername: user.githubUsername,
     githubFetchedAt: user.githubFetchedAt?.toISOString() ?? null,
     breach: user.breach as UserRecordData["breach"],
+    notes: user.notes.map((n) => ({
+      id: n.id,
+      content: n.content,
+      createdAt: n.createdAt.toISOString(),
+      updatedAt: n.updatedAt.toISOString(),
+    })),
     updatedAt: user.updatedAt.toISOString(),
   }
 }

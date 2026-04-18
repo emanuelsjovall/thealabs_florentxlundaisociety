@@ -1,5 +1,6 @@
 import type { LinkedInProfile } from "@/lib/linkedin"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
+import type { PersonalNote } from "@/lib/personal-note"
 import type { StravaProfile } from "@/lib/strava"
 
 /** Persisted JSON shape for `active_company` — company linked for Krafman scraping. */
@@ -115,6 +116,7 @@ export type UserRecordData = {
   readonly githubUsername: string | null
   readonly githubFetchedAt: string | null
   readonly breach: BreachSearchResult | null
+  readonly notes: readonly PersonalNote[]
   readonly updatedAt: string
 }
 
