@@ -470,12 +470,17 @@ function LinkedinProfileContent({ profile }: { profile: LinkedInProfile }) {
           <div className="space-y-2">
             {profile.posts.map((post, i) => (
               <Card key={i}>
+                {post.isRepost === true && (
+                  <p className="mb-2 text-[9px] font-medium uppercase tracking-wide text-amber-600/90">
+                    Repost
+                  </p>
+                )}
                 {post.text && (
                   <p className="text-sm leading-relaxed text-neutral-300">
                     {post.text}
                   </p>
                 )}
-                <div className="mt-2.5 flex items-center gap-4 text-[10px] text-neutral-700">
+                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-neutral-700">
                   {post.date && <span>{post.date}</span>}
                   {post.likes != null && (
                     <span>{post.likes.toLocaleString()} likes</span>

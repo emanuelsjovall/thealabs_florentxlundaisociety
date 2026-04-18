@@ -96,8 +96,20 @@ const PROFILE_TOOL_SCHEMA = {
             likes: { type: ["number", "null"] as const },
             comments: { type: ["number", "null"] as const },
             reposts: { type: ["number", "null"] as const },
+            isRepost: {
+              type: "boolean" as const,
+              description:
+                "True if LinkedIn shows this row as a repost/reshare (e.g. heading like 'Name reposted this', nested quoted update, or repost framing). False if it is original content authored by the profile owner.",
+            },
           },
-          required: ["text", "date", "likes", "comments", "reposts"],
+          required: [
+            "text",
+            "date",
+            "likes",
+            "comments",
+            "reposts",
+            "isRepost",
+          ],
         },
       },
     },
@@ -144,6 +156,26 @@ async function scrollToBottom(
     if (currentHeight === previousHeight) break;
     previousHeight = currentHeight;
   }
+}
+
+function normalizeLinkedInPosts(
+  raw: unknown
+): LinkedInProfile["posts"] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry): LinkedInProfile["posts"][number] => {
+    const post = entry as Record<string, unknown>;
+    return {
+      text: typeof post.text === "string" ? post.text : null,
+      date: typeof post.date === "string" ? post.date : null,
+      likes: typeof post.likes === "number" ? post.likes : null,
+      comments: typeof post.comments === "number" ? post.comments : null,
+      reposts: typeof post.reposts === "number" ? post.reposts : null,
+      isRepost: post.isRepost === true,
+    };
+  });
 }
 
 function stripHtml(html: string): string {
@@ -288,7 +320,11 @@ export async function scrapeLinkedInProfile(
       messages: [
         {
           role: "user",
-          content: `Extract the LinkedIn profile data from this HTML. Only extract what is explicitly present — use null for missing fields. For dates, preserve the original format (e.g., "Jan 2020", "2019").\n\n${cleanedHtml}`,
+          content: `Extract the LinkedIn profile data from this HTML. Only extract what is explicitly present — use null for missing fields. For dates, preserve the original format (e.g., "Jan 2020", "2019").
+
+For each activity/post row: set isRepost to true when LinkedIn indicates a repost or reshare (examples: text like "reposted this", "You reposted", nested/quoted update showing someone else's post being shared). Set isRepost to false only for updates clearly authored as original posts by the profile owner.
+
+${cleanedHtml}`,
         },
       ],
     });
@@ -317,7 +353,7 @@ export async function scrapeLinkedInProfile(
       experiences: (extracted.experiences as LinkedInProfile["experiences"]) ?? [],
       educations: (extracted.educations as LinkedInProfile["educations"]) ?? [],
       skills: (extracted.skills as LinkedInProfile["skills"]) ?? [],
-      posts: (extracted.posts as LinkedInProfile["posts"]) ?? [],
+      posts: normalizeLinkedInPosts(extracted.posts),
     };
 
     return { ok: true, data: profile };

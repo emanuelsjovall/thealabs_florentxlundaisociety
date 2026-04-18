@@ -52,6 +52,8 @@ export interface LinkedInPost {
   readonly likes: number | null;
   readonly comments: number | null;
   readonly reposts: number | null;
+  /** Present after scrape with repost detection: true when LinkedIn framed this activity as a repost/reshare. */
+  readonly isRepost?: boolean;
 }
 
 export interface LinkedInProfile {
