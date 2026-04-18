@@ -19,7 +19,6 @@ import type {
   StravaProfile,
   StravaSearchResult,
   StravaActivity,
-  StravaActivityDetail,
 } from "@/lib/strava"
 import type { KrafmanCompanyProfile } from "@/lib/krafman.types"
 import type { GithubSearchResult } from "@/lib/github-api"
@@ -715,13 +714,14 @@ function ActivityCard({
   activity,
   onClick,
 }: {
-  activity: StravaActivity
-  onClick: () => void
+  readonly activity: StravaActivity
+  readonly onClick: () => void
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="w-full rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40 p-3.5 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/70"
+      className="block w-full rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40 p-3.5 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/70"
     >
       <div className="flex items-center gap-2">
         <span className="rounded bg-orange-500/10 px-1.5 py-0.5 text-[10px] text-orange-400">
@@ -745,17 +745,18 @@ function ActivityCard({
   )
 }
 
-function StravaActivityDetailContent({
-  detail,
+function StravaActivityDetailView({
+  activity,
   onBack,
 }: {
-  detail: StravaActivityDetail
-  onBack: () => void
+  readonly activity: StravaActivity
+  readonly onBack: () => void
 }) {
   return (
     <div className="space-y-8">
       <div>
         <button
+          type="button"
           onClick={onBack}
           className="mb-4 text-[10px] text-neutral-600 transition-colors hover:text-neutral-400"
         >
@@ -763,26 +764,24 @@ function StravaActivityDetailContent({
         </button>
         <div className="flex items-center gap-2.5">
           <span className="rounded bg-orange-500/10 px-2 py-0.5 text-[11px] text-orange-400">
-            {detail.sportType}
+            {activity.sportType}
           </span>
-          <h3 className="text-xl font-light text-foreground">{detail.title}</h3>
+          <h3 className="text-xl font-light text-foreground">{activity.title}</h3>
         </div>
-        {detail.location && (
-          <p className="mt-2 text-[11px] text-neutral-600">{detail.location}</p>
+        {activity.location && (
+          <p className="mt-2 text-[11px] text-neutral-600">{activity.location}</p>
         )}
-        {detail.datetime && (
-          <p className="mt-1 text-[11px] text-neutral-700">
-            {parseStravaDatetime(detail.datetime).toLocaleString()}
-          </p>
-        )}
+        <p className="mt-1 text-[11px] text-neutral-700">
+          {parseStravaDatetime(activity.datetime).toLocaleString()}
+        </p>
       </div>
 
-      {detail.mapUrl && (
+      {activity.mapUrl && (
         <Section label="Route">
           <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-neutral-900/40">
             <img
-              src={detail.mapUrl}
-              alt={`${detail.title} route map`}
+              src={activity.mapUrl}
+              alt={`${activity.title} route map`}
               className="aspect-[1.35] w-full object-cover"
             />
           </div>
@@ -791,71 +790,69 @@ function StravaActivityDetailContent({
 
       <Section label="Stats">
         <div className="grid grid-cols-2 gap-2">
-          {detail.distanceMeters != null && detail.distanceMeters > 0 && (
+          {activity.distanceMeters != null && activity.distanceMeters > 0 && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {formatDistance(detail.distanceMeters)}
+                {formatDistance(activity.distanceMeters)}
               </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Distance</p>
             </Card>
           )}
-          {detail.movingTimeSeconds != null && (
+          {activity.movingTimeSeconds != null && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {formatDuration(detail.movingTimeSeconds)}
+                {formatDuration(activity.movingTimeSeconds)}
               </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Moving Time</p>
             </Card>
           )}
-          {detail.pace && (
+          {activity.pace && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {detail.pace}
+                {activity.pace}
               </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Pace</p>
             </Card>
           )}
-          {detail.elevationMeters != null && detail.elevationMeters > 0 && (
+          {activity.elevationMeters != null && activity.elevationMeters > 0 && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {Math.round(detail.elevationMeters)} m
+                {Math.round(activity.elevationMeters)} m
               </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Elevation</p>
             </Card>
           )}
-          {detail.calories != null && detail.calories > 0 && (
+          {activity.calories != null && activity.calories > 0 && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {detail.calories}
+                {activity.calories}
               </p>
               <p className="mt-0.5 text-[10px] text-neutral-600">Calories</p>
             </Card>
           )}
-          {detail.elapsedTimeSeconds != null && (
+          {activity.elapsedTimeSeconds != null && (
             <Card>
               <p className="text-base font-light text-foreground">
-                {formatDuration(detail.elapsedTimeSeconds)}
+                {formatDuration(activity.elapsedTimeSeconds)}
               </p>
-              <p className="mt-0.5 text-[10px] text-neutral-600">
-                Elapsed Time
-              </p>
+              <p className="mt-0.5 text-[10px] text-neutral-600">Elapsed Time</p>
             </Card>
           )}
         </div>
       </Section>
 
-      {detail.description && (
+      {activity.description && (
         <Section label="Description">
           <p className="text-xs leading-relaxed text-neutral-400">
-            {detail.description}
+            {activity.description}
           </p>
         </Section>
       )}
 
-      {detail.achievements.length > 0 && (
+      {activity.achievements && activity.achievements.length > 0 && (
         <Section label="Achievements">
           <div className="space-y-1.5">
-            {detail.achievements.map((a, i) => (
+            {activity.achievements.map((a, i) => (
               <div
                 key={i}
                 className="rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60 px-2.5 py-1.5 text-[11px] text-neutral-400"
@@ -867,15 +864,17 @@ function StravaActivityDetailContent({
         </Section>
       )}
 
-      <Section label="Social">
-        <div className="flex gap-4 text-[11px] text-neutral-600">
-          <span>{detail.kudosCount} kudos</span>
-          <span>{detail.commentsCount} comments</span>
-        </div>
-      </Section>
+      {(activity.kudosCount != null || activity.commentsCount != null) && (
+        <Section label="Social">
+          <div className="flex gap-4 text-[11px] text-neutral-600">
+            {activity.kudosCount != null && <span>{activity.kudosCount} kudos</span>}
+            {activity.commentsCount != null && <span>{activity.commentsCount} comments</span>}
+          </div>
+        </Section>
+      )}
 
       <a
-        href={detail.activityUrl}
+        href={activity.activityUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="block text-center text-[11px] text-orange-400/80 transition-colors hover:text-orange-400"
@@ -886,16 +885,9 @@ function StravaActivityDetailContent({
   )
 }
 
-type StravaDetailState =
-  | { status: "idle" }
-  | { status: "loading"; activityId: string }
-  | { status: "loaded"; detail: StravaActivityDetail }
-  | { status: "error"; message: string }
-
 function StravaProfileContent({ profile }: { profile: StravaProfile }) {
-  const [detailState, setDetailState] = useState<StravaDetailState>({
-    status: "idle",
-  })
+  const [showAll, setShowAll] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null)
 
   const sportCounts = new Map<string, number>()
   for (const a of profile.activities) {
@@ -905,60 +897,18 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
 
-  const recentActivities = profile.activities.slice(0, 10)
+  const INITIAL_COUNT = 20
+  const visibleActivities = showAll
+    ? profile.activities
+    : profile.activities.slice(0, INITIAL_COUNT)
+  const hasMore = profile.activities.length > INITIAL_COUNT
 
-  async function handleActivityClick(activityId: string): Promise<void> {
-    setDetailState({ status: "loading", activityId })
-    try {
-      const activity = profile.activities.find((item) => item.id === activityId)
-      const res = await fetch("/api/strava/activity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activityId }),
-      })
-      const data = await res.json()
-      if (data.ok) {
-        setDetailState({
-          status: "loaded",
-          detail: {
-            ...data.data,
-            mapUrl: data.data.mapUrl ?? activity?.mapUrl ?? null,
-          },
-        })
-      } else {
-        setDetailState({ status: "error", message: data.error })
-      }
-    } catch {
-      setDetailState({ status: "error", message: "Failed to load activity" })
-    }
-  }
-
-  if (detailState.status === "loading") {
-    return <LoadingSpinner text="Loading activity..." />
-  }
-
-  if (detailState.status === "loaded") {
+  if (selectedActivity) {
     return (
-      <StravaActivityDetailContent
-        detail={detailState.detail}
-        onBack={() => setDetailState({ status: "idle" })}
+      <StravaActivityDetailView
+        activity={selectedActivity}
+        onBack={() => setSelectedActivity(null)}
       />
-    )
-  }
-
-  if (detailState.status === "error") {
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setDetailState({ status: "idle" })}
-          className="text-[10px] text-neutral-600 transition-colors hover:text-neutral-400"
-        >
-          &larr; Back to profile
-        </button>
-        <p className="py-12 text-center text-xs text-red-400">
-          {detailState.message}
-        </p>
-      </div>
     )
   }
 
@@ -1003,16 +953,25 @@ function StravaProfileContent({ profile }: { profile: StravaProfile }) {
         </Section>
       )}
 
-      {recentActivities.length > 0 && (
-        <Section label="Recent Activities">
+      {visibleActivities.length > 0 && (
+        <Section label="Activities">
           <div className="space-y-2">
-            {recentActivities.map((activity) => (
+            {visibleActivities.map((activity) => (
               <ActivityCard
                 key={activity.id}
                 activity={activity}
-                onClick={() => handleActivityClick(activity.id)}
+                onClick={() => setSelectedActivity(activity as StravaActivity)}
               />
             ))}
+            {hasMore && !showAll && (
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="w-full rounded-md border border-neutral-800 py-2 text-[10px] tracking-[0.15em] text-neutral-500 uppercase transition-colors hover:text-neutral-300"
+              >
+                Show all {profile.activities.length} activities
+              </button>
+            )}
           </div>
         </Section>
       )}

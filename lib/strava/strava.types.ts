@@ -38,6 +38,13 @@ export interface StravaActivity {
   readonly hasMap: boolean;
   readonly mapUrl: string | null;
   readonly activityUrl: string;
+  readonly location: string | null;
+  readonly calories: number | null;
+  readonly pace: string | null;
+  readonly kudosCount: number | null;
+  readonly commentsCount: number | null;
+  readonly achievements: readonly string[] | null;
+  readonly description: string | null;
 }
 
 export interface StravaSearchResult {

@@ -8,26 +8,29 @@ datasource db {
 }
 
 model User {
-  id               String         @id @default(cuid())
+  id               String           @id @default(cuid())
   name             String
-  normalizedName   String         @unique @map("normalized_name")
+  normalizedName   String           @unique @map("normalized_name")
   person           Json?
-  linkedinUrl      String?        @unique @map("linkedin_url")
+  linkedinUrl      String?          @unique @map("linkedin_url")
   linkedin         Json?
   strava           Json?
-  activeCompany    Json?          @map("active_company")
+  stravaAthleteId  String?          @map("strava_athlete_id")
+  stravaFetchedAt  DateTime?        @map("strava_fetched_at")
+  activeCompany    Json?            @map("active_company")
   krafman          Json?
   twitter          Json?
-  twitterUsername  String?        @map("twitter_username")
-  twitterUserId    String?        @map("twitter_user_id")
-  twitterFetchedAt DateTime?      @map("twitter_fetched_at")
+  twitterUsername  String?          @map("twitter_username")
+  twitterUserId    String?          @map("twitter_user_id")
+  twitterFetchedAt DateTime?        @map("twitter_fetched_at")
   github           Json?
-  githubUsername   String?        @map("github_username")
-  githubFetchedAt  DateTime?      @map("github_fetched_at")
+  githubUsername   String?          @map("github_username")
+  githubFetchedAt  DateTime?        @map("github_fetched_at")
   breach           Json?
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
   twitterTweets    TwitterTweet[]
+  stravaActivities StravaActivity[]
   notes            Note[]
 
   @@map("users")
@@ -74,4 +77,32 @@ model Note {
 
   @@index([userId, updatedAt(sort: Desc)])
   @@map("notes")
+}
+
+model StravaActivity {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  stravaActivityId   String   @unique @map("strava_activity_id")
+  title              String
+  sportType          String   @map("sport_type")
+  distanceMeters     Float?   @map("distance_meters")
+  movingTimeSeconds  Int?     @map("moving_time_seconds")
+  elapsedTimeSeconds Int?     @map("elapsed_time_seconds")
+  elevationMeters    Float?   @map("elevation_meters")
+  calories           Int?
+  pace               String?
+  location           String?
+  kudosCount         Int      @default(0) @map("kudos_count")
+  commentsCount      Int      @default(0) @map("comments_count")
+  achievements       Json?
+  description        String?  @db.Text
+  hasMap             Boolean  @default(false) @map("has_map")
+  mapUrl             String?  @map("map_url")
+  activityUrl        String   @map("activity_url")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("strava_activities")
 }

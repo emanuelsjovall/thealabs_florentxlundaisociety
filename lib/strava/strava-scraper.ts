@@ -65,6 +65,13 @@ function toActivity(raw: RawActivity): StravaActivity {
     hasMap: raw.has_latlng,
     mapUrl: raw.static_map ?? null,
     activityUrl: raw.activity_url,
+    location: null,
+    calories: null,
+    pace: null,
+    kudosCount: null,
+    commentsCount: null,
+    achievements: null,
+    description: null,
   };
 }
 
@@ -328,21 +335,20 @@ export class StravaScraper {
   private async fetchAllActivities(
     athleteId: string
   ): Promise<{ readonly total: number; readonly items: StravaActivity[] }> {
-    const perPage = 100;
     const allActivities: StravaActivity[] = [];
     let page = 1;
     let total = 0;
 
     while (true) {
       const data = await this.fetchJson<TrainingActivitiesResponse>(
-        `/athlete/training_activities?athlete_id=${athleteId}&per_page=${perPage}&page=${page}`
+        `/athlete/training_activities?athlete_id=${athleteId}&page=${page}`
       );
 
       total = data.total;
       const activities = data.models.map(toActivity);
       allActivities.push(...activities);
 
-      if (allActivities.length >= total || activities.length < perPage) {
+      if (activities.length === 0 || allActivities.length >= total) {
         break;
       }
 
@@ -351,6 +357,61 @@ export class StravaScraper {
 
     return { total, items: allActivities };
   }
+
+  /**
+   * Fetches detailed data for a batch of activities with concurrency control.
+   * Returns details merged with the base activity; falls back to base on error.
+   */
+  async fetchActivitiesWithDetails(
+    activities: readonly StravaActivity[],
+    concurrency: number = 3
+  ): Promise<StravaActivityDetail[]> {
+    const results: StravaActivityDetail[] = [];
+
+    for (let i = 0; i < activities.length; i += concurrency) {
+      const batch = activities.slice(i, i + concurrency);
+      const settled = await Promise.allSettled(
+        batch.map(async (activity) => {
+          const detail = await this.scrapeActivity(activity.id);
+          if (detail.ok) {
+            return detail.data;
+          }
+          // Fall back to base activity data on detail scrape failure
+          return activityToDetail(activity);
+        })
+      );
+
+      for (const result of settled) {
+        if (result.status === "fulfilled") {
+          results.push(result.value);
+        }
+      }
+    }
+
+    return results;
+  }
+}
+
+function activityToDetail(a: StravaActivity): StravaActivityDetail {
+  return {
+    id: a.id,
+    title: a.title,
+    sportType: a.sportType,
+    datetime: a.datetime,
+    location: null,
+    distanceMeters: a.distanceMeters,
+    movingTimeSeconds: a.movingTimeSeconds,
+    elapsedTimeSeconds: a.elapsedTimeSeconds,
+    elevationMeters: a.elevationMeters,
+    calories: null,
+    pace: null,
+    kudosCount: 0,
+    commentsCount: 0,
+    achievements: [],
+    mapUrl: a.mapUrl,
+    activityUrl: a.activityUrl,
+    description: null,
+  };
 }
 
 class SessionExpiredError extends Error {

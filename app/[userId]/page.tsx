@@ -554,18 +554,22 @@ export default function UserPage() {
       }
 
       try {
-        const res = await fetch("/api/strava/scrape", {
+        const res = await fetch("/api/strava/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ athleteId }),
+          body: JSON.stringify({ userId, athleteId }),
         })
-        const data = await res.json()
+        const data = (await res.json()) as {
+          ok: boolean
+          data?: UserRecordData
+          error?: string
+        }
 
-        if (data.ok) {
-          setStravaState({ status: "profile", profile: data.data })
-          await saveUserRecord({ strava: data.data })
+        if (data.ok && data.data?.strava) {
+          setStravaState({ status: "profile", profile: data.data.strava })
+          setSubjectUpdatedAt(data.data.updatedAt ?? null)
         } else {
-          setStravaState({ status: "error", message: data.error })
+          setStravaState({ status: "error", message: data.error ?? "Failed to sync Strava" })
         }
       } catch {
         setStravaState({
@@ -574,7 +578,7 @@ export default function UserPage() {
         })
       }
     },
-    [saveUserRecord]
+    [userId]
   )
 
   const handleRetryStravaSearch = useCallback(async (searchQuery: string) => {
