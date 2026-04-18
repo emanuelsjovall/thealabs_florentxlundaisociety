@@ -1,17 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useCallback, useEffect, type ElementType } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useParams } from "next/navigation"
-import {
-  MapPin,
-  Mail,
-  Phone,
-  Globe,
-  ChevronDown,
-  ChevronUp,
-  ArrowLeft,
-} from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { GraphCanvas } from "@/components/graph-canvas"
 import { DetailPanel } from "@/components/detail-panel"
 import type {
@@ -23,7 +15,6 @@ import type {
   GithubPanelState,
   BreachPanelState,
 } from "@/components/detail-panel"
-import { cn } from "@/lib/utils"
 import type { LinkedInSearchResult } from "@/lib/linkedin"
 import type { StravaSearchResult } from "@/lib/strava"
 import type {
@@ -43,47 +34,18 @@ import {
 } from "@/lib/user-record"
 import type { PersonalNote } from "@/lib/personal-note"
 
-function ContactRow({
-  icon: Icon,
-  text,
-}: {
-  readonly icon: ElementType
-  readonly text: string
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Icon className="h-3 w-3 shrink-0 text-neutral-700" />
-      <span className="truncate text-[11px] text-neutral-500">{text}</span>
-    </div>
-  )
-}
-
 interface PersonNodeProps {
   readonly person: UserPerson
-  readonly expanded: boolean
   readonly onSelect: () => void
-  readonly onToggle: () => void
 }
 
-function PersonNode({ person, expanded, onSelect, onToggle }: PersonNodeProps) {
+function PersonNode({ person, onSelect }: PersonNodeProps) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-[#0b0b0b] p-4 transition-colors hover:border-neutral-700">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3">
         <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-600">
           SUBJECT
         </span>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="rounded p-0.5 text-neutral-700 transition-colors hover:bg-neutral-900 hover:text-neutral-500"
-          aria-label={expanded ? "Collapse subject" : "Expand subject"}
-        >
-          {expanded ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </button>
       </div>
 
       <button
@@ -93,25 +55,6 @@ function PersonNode({ person, expanded, onSelect, onToggle }: PersonNodeProps) {
       >
         {person.name}
       </button>
-
-      <div
-        className={cn(
-          "grid transition-all duration-300",
-          expanded ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]"
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-2 border-t border-neutral-800 pt-3">
-            <ContactRow
-              icon={MapPin}
-              text={[person.city, person.state].filter(Boolean).join(", ")}
-            />
-            <ContactRow icon={Mail} text={person.email} />
-            <ContactRow icon={Phone} text={person.phone} />
-            <ContactRow icon={Globe} text={person.website} />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -134,7 +77,6 @@ export default function UserPage() {
     | "notes"
     | null
   >(null)
-  const [subjectExpanded, setSubjectExpanded] = useState(true)
   const [linkedinState, setLinkedinState] = useState<LinkedInPanelState | null>(
     null
   )
@@ -1004,7 +946,7 @@ export default function UserPage() {
 
       {/* Left sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-neutral-800 bg-background p-6">
-        <div className="mb-6">
+        <div className="mb-6 shrink-0">
           <span className="font-mono text-xs tracking-[0.3em] text-neutral-500">
             THEA
           </span>
@@ -1013,21 +955,18 @@ export default function UserPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <PersonNode person={subject} onSelect={handleSelectSubject} />
+        </div>
+
+        <div className="shrink-0 border-t border-neutral-800 pt-6">
           <Link
             href="/"
-            className="inline-flex w-fit items-center gap-2 rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase transition-colors hover:text-foreground"
+            className="inline-flex w-fit max-w-full items-center gap-2 rounded-md px-1 py-1 font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="h-3 w-3" />
+            <ArrowLeft className="h-3 w-3 shrink-0" />
             <span>Back to homescreen</span>
           </Link>
-
-          <PersonNode
-            person={subject}
-            expanded={subjectExpanded}
-            onSelect={handleSelectSubject}
-            onToggle={() => setSubjectExpanded(!subjectExpanded)}
-          />
         </div>
       </aside>
 
